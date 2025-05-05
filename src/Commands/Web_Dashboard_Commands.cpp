@@ -444,30 +444,34 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE1") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE1_KEY, angle);
-        persistence.endTransaction();
+        paintingSettings.setServoAngleSide1(angle); // Update in memory
+        paintingSettings.saveSettings(); // Save all settings
+        Serial.print("Servo Angle Side 1 set to (and saved): "); // Added debug
+        Serial.println(angle);
         webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 1 set and saved");
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE2") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE2_KEY, angle);
-        persistence.endTransaction();
+        paintingSettings.setServoAngleSide2(angle); // Update in memory
+        paintingSettings.saveSettings(); // Save all settings
+        Serial.print("Servo Angle Side 2 set to (and saved): "); // Added debug
+        Serial.println(angle);
         webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 2 set and saved");
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE3") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE3_KEY, angle);
-        persistence.endTransaction();
+        paintingSettings.setServoAngleSide3(angle); // Update in memory
+        paintingSettings.saveSettings(); // Save all settings
+        Serial.print("Servo Angle Side 3 set to (and saved): "); // Added debug
+        Serial.println(angle);
         webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 3 set and saved");
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE4") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE4_KEY, angle);
-        persistence.endTransaction();
+        paintingSettings.setServoAngleSide4(angle); // Update in memory
+        paintingSettings.saveSettings(); // Save all settings
+        Serial.print("Servo Angle Side 4 set to (and saved): "); // Added debug
+        Serial.println(angle);
         webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 4 set and saved");
     }
     else if (baseCommand == "SAVE_PAINT_SETTINGS") {
@@ -897,13 +901,13 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         webSocket->broadcastTXT(message);
         
         // Servo Angles (Order: 1, 2, 3, 4)
-        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 35)); // Use NVS key, default 35
+        message = "SETTING:servoAngleSide1:" + String(paintingSettings.getServoAngleSide1()); // Use getter
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 35)); // Use NVS key, default 35
+        message = "SETTING:servoAngleSide2:" + String(paintingSettings.getServoAngleSide2()); // Use getter
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 35)); // Use NVS key, default 35
+        message = "SETTING:servoAngleSide3:" + String(paintingSettings.getServoAngleSide3()); // Use getter
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 35)); // Use NVS key, default 35
+        message = "SETTING:servoAngleSide4:" + String(paintingSettings.getServoAngleSide4()); // Use getter
         webSocket->broadcastTXT(message);
     }
     else if (baseCommand == "ENTER_MANUAL_MODE") {

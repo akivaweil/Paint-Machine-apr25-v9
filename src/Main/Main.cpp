@@ -38,8 +38,7 @@ void setup() {
   initializeSystem();
   
   // Initialize servo after settings are loaded
-  // int initialServoAngle = paintingSettings.getSide1RotationAngle(); // Get initial angle from loaded settings
-  int initialServoAngle = 35; // <<< Set initial angle directly to 35
+  int initialServoAngle = paintingSettings.getServoAngleSide1(); // Get initial angle from loaded settings
   myServo.init(initialServoAngle);
   Serial.printf("Servo Initialized at: %d degrees\n", initialServoAngle);
 
