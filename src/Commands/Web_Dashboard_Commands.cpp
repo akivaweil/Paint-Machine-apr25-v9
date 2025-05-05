@@ -256,21 +256,33 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     else if (baseCommand == "PAINT_SIDE_1") {
         Serial.println("Painting side 1...");
         paintSide1Pattern();
+        //! Move to 0,0,0 before homing
+        Serial.println("Single side paint complete. Moving to 0,0,0 before homing...");
+        moveToXYZ(0, DEFAULT_X_SPEED, 0, DEFAULT_Y_SPEED, 0, DEFAULT_Z_SPEED); 
         if (stateMachine) stateMachine->changeState(stateMachine->getHomingState()); // Home after painting
     }
     else if (baseCommand == "PAINT_SIDE_2") {
         Serial.println("Painting side 2...");
         paintSide2Pattern();
+        //! Move to 0,0,0 before homing
+        Serial.println("Single side paint complete. Moving to 0,0,0 before homing...");
+        moveToXYZ(0, DEFAULT_X_SPEED, 0, DEFAULT_Y_SPEED, 0, DEFAULT_Z_SPEED);
         if (stateMachine) stateMachine->changeState(stateMachine->getHomingState()); // Home after painting
     }
     else if (baseCommand == "PAINT_SIDE_3") {
         Serial.println("Painting side 3...");
         paintSide3Pattern();
+        //! Move to 0,0,0 before homing
+        Serial.println("Single side paint complete. Moving to 0,0,0 before homing...");
+        moveToXYZ(0, DEFAULT_X_SPEED, 0, DEFAULT_Y_SPEED, 0, DEFAULT_Z_SPEED);
         if (stateMachine) stateMachine->changeState(stateMachine->getHomingState()); // Home after painting
     }
     else if (baseCommand == "PAINT_SIDE_4") {
         Serial.println("Painting side 4...");
         paintSide4Pattern();
+        //! Move to 0,0,0 before homing
+        Serial.println("Single side paint complete. Moving to 0,0,0 before homing...");
+        moveToXYZ(0, DEFAULT_X_SPEED, 0, DEFAULT_Y_SPEED, 0, DEFAULT_Z_SPEED);
         if (stateMachine) stateMachine->changeState(stateMachine->getHomingState()); // Home after painting
     }
     else if (baseCommand == "PAINT_ALL_SIDES") {

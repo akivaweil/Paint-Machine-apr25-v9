@@ -10,6 +10,10 @@ public:
     void update() override;
     void exit() override;
     const char* getName() const override;
+
+private:
+    bool _isCleaning;
+    bool _cleaningComplete;
 };
 
 #endif // CLEANING_STATE_H 

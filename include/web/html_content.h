@@ -806,8 +806,8 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
         function updateButtonStates(stateName) {
             console.log("Updating button states for state: " + stateName);
             
-            const isIdle = (stateName === 'IDLE');
-            const isManual = (stateName === 'MANUAL');
+            // Determine if buttons should be enabled (Machine is idle OR in PnP mode)
+            const canPerformActions = (stateName === 'IDLE' || stateName === 'PNP'); 
             
             // Get button elements
             const paintSide1Btn = document.getElementById('paintSide1Btn');
@@ -821,32 +821,22 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             const pressurePotToggle = document.getElementById('pressurePotToggle');
             const paintGunToggle = document.getElementById('paintGunToggle');
             
-            // Action buttons (Painting, Homing, Cleaning, PnP Start) - Enabled only when IDLE
-            if (paintSide1Btn) paintSide1Btn.disabled = !isIdle;
-            if (paintSide2Btn) paintSide2Btn.disabled = !isIdle;
-            if (paintSide3Btn) paintSide3Btn.disabled = !isIdle;
-            if (paintSide4Btn) paintSide4Btn.disabled = !isIdle;
-            if (paintAllSidesBtn) paintAllSidesBtn.disabled = !isIdle;
-            if (homeBtn) homeBtn.disabled = !isIdle;
-            if (cleanGunBtn) cleanGunBtn.disabled = !isIdle;
-            if (pnpButton) pnpButton.disabled = !isIdle;
+            // Action buttons (Painting, Homing, Cleaning, PnP Start) 
+            // Enabled only when IDLE or PNP
+            if (paintSide1Btn) paintSide1Btn.disabled = !canPerformActions;
+            if (paintSide2Btn) paintSide2Btn.disabled = !canPerformActions;
+            if (paintSide3Btn) paintSide3Btn.disabled = !canPerformActions;
+            if (paintSide4Btn) paintSide4Btn.disabled = !canPerformActions;
+            if (paintAllSidesBtn) paintAllSidesBtn.disabled = !canPerformActions;
+            if (homeBtn) homeBtn.disabled = !canPerformActions;
+            if (cleanGunBtn) cleanGunBtn.disabled = !canPerformActions;
+            if (pnpButton) pnpButton.disabled = !canPerformActions;
             
             // Toggles (Pressure Pot, Paint Gun) - Generally always enabled, 
             // but you might want to disable them during certain states too?
             // For now, keeping them enabled.
-            if (pressurePotToggle) {
-                // If you want to disable the toggle itself:
-                // pressurePotToggle.disabled = !isIdle && !isManual; // Example: disable if not idle or manual
-                // Or disable the whole container:
-                // pressurePotToggle.closest('.toggle-switch').style.pointerEvents = (isIdle || isManual) ? 'auto' : 'none';
-                // pressurePotToggle.closest('.toggle-switch').style.opacity = (isIdle || isManual) ? '1' : '0.5';
-            }
-            if (paintGunToggle) {
-                // Similar logic as pressure pot if needed
-            }
-            
-            // Update PnP Button text/action based on state? (Future enhancement)
-            // Update Manual Mode Button? (Add button if needed)
+            // if (pressurePotToggle) pressurePotToggle.disabled = !canPerformActions; // Example if needed
+            // if (paintGunToggle) paintGunToggle.disabled = !canPerformActions; // Example if needed
         }
 
         // Send commands to the ESP32
