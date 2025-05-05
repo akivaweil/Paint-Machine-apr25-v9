@@ -4,9 +4,10 @@
 #include "motors/ServoMotor.h"
 // #include "motors/servo_control.h" // Servo control removed
 #include "utils/settings.h"
-#include "system/machine_state.h"
+// #include "system/machine_state.h" // No longer needed
 #include "hardware/paintGun_Functions.h"
 #include "hardware/pressurePot_Functions.h"
+#include "system/StateMachine.h" // Added include
 // #include "hardware/Brush_Functions.h" // File does not exist
 
 // External variable for pressure pot state
@@ -17,6 +18,9 @@ extern void PressurePot_OFF();
 
 // External servo instance
 extern ServoMotor myServo;
+
+// Reference to the global state machine instance
+extern StateMachine* stateMachine;
 
 // Cleaning state variables
 bool cleaningInProgress = false;
@@ -35,7 +39,7 @@ CleaningState::CleaningState() {
 
 void CleaningState::enter() {
     Serial.println("Entering Cleaning State");
-    setMachineState(MachineState::CLEANING);
+    // setMachineState(MachineState::CLEANING); // REMOVED
     
     //! Set Servo to cleaning angle
     myServo.setAngle(35);
@@ -74,18 +78,14 @@ void CleaningState::enter() {
     
     //! Step 6: Complete cleaning cycle
     Serial.println("Cleaning Cycle Complete.");
-    // cleaningCompleted = true; // Flag might not be needed if transitioning immediately
-    // cleaningInProgress = false;
     
-    // Reset machine state - Transition back to Idle via StateMachine
-    // clearMachineState(); // REMOVE THIS - Let state machine handle it
+    // Transition back to Idle via StateMachine
     if (stateMachine) {
         Serial.println("Cleaning complete. Transitioning back to Idle State.");
         stateMachine->changeState(stateMachine->getIdleState());
     } else {
         Serial.println("ERROR: StateMachine pointer null in CleaningState! Cannot transition.");
-        // Attempt fallback
-        setMachineState(MachineState::IDLE);
+        // Fallback?
     }
 }
 
@@ -95,7 +95,7 @@ void CleaningState::update() {
 
 void CleaningState::exit() {
     Serial.println("Exiting Cleaning State");
-    setMachineState(MachineState::UNKNOWN); // Or IDLE?
+    // setMachineState(MachineState::UNKNOWN); // REMOVED
     // Stop cleaning cycle, turn off pumps/valves, etc.
 }
 

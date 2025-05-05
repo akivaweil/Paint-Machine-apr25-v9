@@ -6,7 +6,7 @@
 #include <FastAccelStepper.h>      // Include for stepper access
 #include "persistence/PaintingSettings.h"
 #include "motors/Rotation_Motor.h"
-#include "system/machine_state.h" // Added include for MachineState enum
+// #include "system/machine_state.h" // No longer needed
 #include "hardware/paintGun_Functions.h" // Added include for paintGun_OFF
 
 // Define necessary variables or includes specific to PaintingState if known
@@ -32,7 +32,7 @@ PaintingState::PaintingState() {
 
 void PaintingState::enter() {
     Serial.println("Entering Painting State");
-    // Code to run once when entering the painting state
+    // setMachineState(MachineState::PAINTING); // REMOVED
     
     paintAllSides(); // Call the function to paint all sides
 
@@ -53,7 +53,7 @@ void PaintingState::enter() {
         stateMachine->changeState(stateMachine->getIdleState());
     } else {
         Serial.println("Error: StateMachine pointer is null in PaintingState::enter()");
-        // Handle error appropriately, maybe go to an error state or home
+        // Fallback?
     }
 }
 
@@ -65,7 +65,7 @@ void PaintingState::update() {
 
 void PaintingState::exit() {
     Serial.println("Exiting Painting State");
-    setMachineState(MachineState::UNKNOWN); // Or IDLE if appropriate after painting
+    // setMachineState(MachineState::UNKNOWN); // REMOVED
     // Stop paint gun, ensure motors are stopped, etc.
     paintGun_OFF(); 
 }

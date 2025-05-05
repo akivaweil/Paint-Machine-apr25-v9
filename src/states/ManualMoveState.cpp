@@ -1,13 +1,16 @@
 #include "states/ManualMoveState.h"
 #include <Arduino.h>
 #include <FastAccelStepper.h>
-#include "system/machine_state.h"
 #include "motors/XYZ_Movements.h"
 #include "motors/ServoMotor.h"
 #include "utils/settings.h"
+#include "system/StateMachine.h"
 
 // External servo instance
 extern ServoMotor myServo;
+
+// External StateMachine instance (needed for checks)
+extern StateMachine* stateMachine;
 
 // Speed settings for manual movements (adjust as needed)
 const unsigned int MANUAL_MOVE_X_SPEED = 10000; 
@@ -24,7 +27,6 @@ ManualMoveState::ManualMoveState() : isMoving(false) {
 
 void ManualMoveState::enter() {
     Serial.println("Entering Manual Move State");
-    setMachineState(MachineState::MANUAL);
     isMoving = false;
 }
 
@@ -40,9 +42,6 @@ void ManualMoveState::update() {
 
 void ManualMoveState::exit() {
     Serial.println("Exiting Manual Move State");
-    setMachineState(MachineState::UNKNOWN); // Or back to IDLE?
-    // Stop any ongoing movement initiated in this state
-    // e.g., stopAllMotors(); // Might need access to steppers
     isMoving = false;
 }
 
@@ -51,7 +50,8 @@ const char* ManualMoveState::getName() const {
 }
 
 void ManualMoveState::moveToPosition(long targetX, long targetY, long targetZ, int targetAngle) {
-    if (getMachineState() != MachineState::MANUAL) {
+    // Check if we are actually in the manual move state using StateMachine
+    if (!stateMachine || stateMachine->getCurrentState() != this) { 
         Serial.println("Error: Cannot execute manual move outside of Manual Move State.");
         return;
     }

@@ -1,7 +1,11 @@
 #include <Arduino.h>
 #include "utils/Serial_Commands.h"
-#include "system/machine_state.h"
+// #include "system/machine_state.h" // No longer needed
 #include "utils/settings.h"
+#include "system/StateMachine.h" // Needed for state access
+
+// Reference to the global state machine instance
+extern StateMachine* stateMachine;
 
 // Function declarations for commands
 void cmdHome();
@@ -275,38 +279,13 @@ void cmdVacuum(bool state) {
 
 void cmdStatus() {
   Serial.println("Machine Status:");
-  MachineState state = getMachineState();
-
-  Serial.print("Current State: ");
-  switch (state) {
-    case MachineState::IDLE:
-      Serial.println("Idle");
-      break;
-    case MachineState::HOMING:
-      Serial.println("Homing");
-      break;
-    case MachineState::PAINTING:
-      Serial.println("Painting");
-      break;
-    case MachineState::PNP:
-      Serial.println("Pick & Place");
-      break;
-    case MachineState::CLEANING:
-      Serial.println("Cleaning");
-      break;
-    case MachineState::MANUAL:
-      Serial.println("Manual Move");
-      break;
-    case MachineState::PAUSED:
-      Serial.println("Paused");
-      break;
-    case MachineState::ERROR:
-      Serial.println("Error");
-      break;
-    case MachineState::UNKNOWN:
-    default:
-      Serial.println("Unknown");
-      break;
+  
+  if (stateMachine && stateMachine->getCurrentState()) {
+    const char* stateName = stateMachine->getCurrentState()->getName();
+    Serial.print("Current State: ");
+    Serial.println(stateName ? stateName : "Unknown (getName failed)");
+  } else {
+    Serial.println("Current State: UNKNOWN (StateMachine unavailable)");
   }
   
   // Display positions (these would need to be implemented elsewhere)

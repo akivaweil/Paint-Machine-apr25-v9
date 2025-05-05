@@ -1,7 +1,6 @@
 #include "states/IdleState.h"
 #include <Arduino.h>
 #include <Bounce2.h> // Include Bounce2 library
-#include "system/machine_state.h"
 #include "utils/settings.h" // Include for PNP_CYCLE_SWITCH_PIN
 #include "system/StateMachine.h" // Include for state machine access
 #include "states/PnPState.h" // Include the new PnPState
@@ -22,7 +21,7 @@ IdleState::IdleState() {
 void IdleState::enter() {
     Serial.println("Entering Idle State");
     // Set machine status or perform actions specific to entering idle
-    setMachineState(MachineState::IDLE); // Update the global state enum
+    // setMachineState(MachineState::IDLE); // REMOVED
 
     // Stop motors if they were moving (safety measure)
     // stopAllMotors(); // Example function call
@@ -48,10 +47,10 @@ void IdleState::update() {
 
     // Example: Check for incoming web command (handled elsewhere, but could be checked here)
 
-    // Keep machine state updated if necessary (though likely done on entry)
-    if (getMachineState() != MachineState::IDLE) {
-         setMachineState(MachineState::IDLE); 
-    }
+    // Keep machine state updated if necessary (REMOVED - StateMachine is source of truth)
+    // if (getMachineState() != MachineState::IDLE) {
+    //      setMachineState(MachineState::IDLE); 
+    // }
 
     // No continuous actions typically occur in Idle
 

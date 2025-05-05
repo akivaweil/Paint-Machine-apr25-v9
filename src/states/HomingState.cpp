@@ -3,7 +3,7 @@
 // #include <Bounce2.h> // No longer needed here
 #include <FastAccelStepper.h>
 #include "utils/settings.h"
-#include "system/machine_state.h"
+// #include "system/machine_state.h" // No longer needed
 #include "system/StateMachine.h" 
 // #include "motors/XYZ_Movements.h" // XYZ_Movements likely included via Homing.h if needed
 #include "motors/Homing.h" // Include the new Homing class header
@@ -27,8 +27,6 @@ extern FastAccelStepper *stepperZ;
 
 // Machine state variables
 // bool isHoming = false; // Moved to Homing class or managed internally
-void setMachineState(int state);
-void clearMachineState();
 
 // Reference to the state machine
 extern StateMachine* stateMachine;
@@ -52,54 +50,77 @@ extern FastAccelStepperEngine engine;
 // extern Bounce debounceY_Right;
 // extern Bounce debounceZ;
 
-HomingState::HomingState() {
-    // Constructor implementation (can be empty if nothing needed)
+HomingState::HomingState() : 
+    _homingController(nullptr), // Initialize pointer
+    _isHoming(false),
+    _homingComplete(false),
+    _homingSuccess(false)
+{ 
+    // Constructor implementation
+}
+
+HomingState::~HomingState() {
+    delete _homingController; // Clean up controller if allocated
 }
 
 void HomingState::enter() {
     Serial.println("Entering Homing State");
     
-    // // Initialize bounce objects for homing - Moved to Homing class constructor
-    // xHomeSwitch.attach(X_HOME_SWITCH);
-    // xHomeSwitch.interval(HOMING_SWITCH_DEBOUNCE_MS);
-    // ... etc ...
+    // Prepare for homing
+    delete _homingController; // Delete previous instance if any
+    _homingController = new Homing(engine, stepperX, stepperY_Left, stepperY_Right, stepperZ);
     
-    //! Create Homing object and run homing sequence
-    Homing homingController(engine, stepperX, stepperY_Left, stepperY_Right, stepperZ);
-    bool homingSuccess = homingController.homeAllAxes();
-
-    // After homing attempt, transition back to idle state (or handle error)
-    // The Homing class now handles setting MACHINE_HOMING and MACHINE_IDLE/MACHINE_ERROR internally.
-    // We just need to tell the StateMachine to transition.
-    if (stateMachine) {
-        if (homingSuccess) {
-             Serial.println("Homing successful, transitioning to IDLE state.");
-             // clearMachineState(); // Called within homeAllAxes on success
-             stateMachine->changeState(stateMachine->getIdleState());
-        } else {
-             Serial.println("Homing failed, transitioning to IDLE state (or an error state if implemented)." );
-             stateMachine->changeState(stateMachine->getIdleState());
-        }
-    } else {
-         Serial.println("ERROR: StateMachine pointer is null after homing attempt!");
-         // Handle error, maybe manual state setting?
-         if (homingSuccess) {
-             clearMachineState(); // Sets to IDLE
-         } else {
-             setMachineState(MachineState::ERROR); // Corrected call
-         }
-    }
+    _isHoming = true;
+    _homingComplete = false;
+    _homingSuccess = false;
+    Serial.println("Homing process initiated...");
+    // DO NOT call homeAllAxes() here if it's blocking
 }
 
 void HomingState::update() {
-    // Homing is blocking within the enter() method, so update() is currently unused for homing progress.
-    // If homing were made non-blocking, progress checks would go here.
+    // If homing process hasn't completed yet
+    if (_isHoming && !_homingComplete) {
+        if (_homingController) {
+            Serial.println("Executing Homing::homeAllAxes()...");
+            _homingSuccess = _homingController->homeAllAxes(); // BLOCKING CALL
+            _homingComplete = true; // Mark as complete
+            _isHoming = false;      // No longer actively homing
+            Serial.println("Homing::homeAllAxes() finished.");
+        } else {
+            Serial.println("ERROR: HomingController is null in HomingState::update()!");
+            _homingComplete = true; // Mark complete to allow transition
+            _homingSuccess = false;
+            _isHoming = false;
+        }
+    }
+    
+    // If homing is marked as complete, transition back to Idle
+    if (_homingComplete) {
+        if (_homingSuccess) {
+            Serial.println("Homing successful, transitioning to IDLE state.");
+        } else {
+            Serial.println("Homing failed, transitioning to IDLE state.");
+            // Future: Transition to ErrorState?
+        }
+        
+        if (stateMachine) {
+            stateMachine->changeState(stateMachine->getIdleState()); 
+            // Reset flag for next entry after transition
+            _homingComplete = false; 
+        } else {
+            Serial.println("ERROR: StateMachine pointer null in HomingState::update()! Cannot transition.");
+             // Prevent potential infinite loop if stateMachine is null
+             _homingComplete = false; 
+        }
+    }
 }
 
 void HomingState::exit() {
      Serial.println("Exiting Homing State");
-    // No longer need to manage isHoming flag here
-    setMachineState(MachineState::UNKNOWN); // Or IDLE if appropriate after homing
+     delete _homingController; // Clean up controller
+     _homingController = nullptr;
+     _isHoming = false;
+     _homingComplete = false;
 }
 
 const char* HomingState::getName() const {

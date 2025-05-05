@@ -1,6 +1,6 @@
 #include "states/PausedState.h"
 #include <Arduino.h>
-#include "system/machine_state.h"
+// #include "system/machine_state.h" // No longer needed
 
 // Define necessary variables or includes specific to PausedState if known
 // #include "settings.h"
@@ -22,7 +22,7 @@ void PausedState::update() {
 void PausedState::exit() {
     Serial.println("Exiting Paused State");
     // Code to run once when exiting the paused state
-    setMachineState(MachineState::UNKNOWN); // State after pause depends on context
+    // setMachineState(MachineState::UNKNOWN); // REMOVED
 }
 
 const char* PausedState::getName() const {

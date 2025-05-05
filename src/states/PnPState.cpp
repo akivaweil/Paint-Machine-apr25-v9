@@ -1,6 +1,6 @@
 #include "states/PnPState.h"
 #include <Arduino.h>
-#include "system/machine_state.h"
+// #include "system/machine_state.h" // No longer needed
 #include "utils/settings.h" 
 #include "motors/XYZ_Movements.h"
 #include "motors/stepper_globals.h" 
@@ -49,7 +49,7 @@ PnPState::PnPState() :
 
 void PnPState::enter() {
     Serial.println("Entering PnP State...");
-    setMachineState(MachineState::PNP); // Use correct enum from machine_state.h
+    // setMachineState(MachineState::PNP); // REMOVED
 
     // Initialize PnP specific things
     calculateGridPositions();
@@ -210,7 +210,7 @@ void PnPState::update() {
 
 
 void PnPState::exit() {
-    setMachineState(MachineState::UNKNOWN); // Or IDLE
+    // setMachineState(MachineState::UNKNOWN); // REMOVED
     Serial.println("Exiting PnP State");
     // Restore speeds if they were changed
     // Turn off any PnP specific indicators

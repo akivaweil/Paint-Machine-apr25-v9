@@ -43,7 +43,7 @@ long Homing::inchesToStepsXYZ(float inches) {
 // Implementation of the homing logic, now as a class method
 bool Homing::homeAllAxes() {
     Serial.println("Starting Home All Axes sequence...");
-    setMachineState(MachineState::HOMING); // Use enum
+    // setMachineState(MachineState::HOMING); // REMOVED
     
     //! STEP 1: Initialize homing sequence
     Serial.println("Starting homing sequence...");
@@ -102,7 +102,7 @@ bool Homing::homeAllAxes() {
             if (!yRightHomed) _stepperY_Right->forceStopAndNewPosition(_stepperY_Right->getCurrentPosition()); // Stop Y Right too
             if (!zHomed) _stepperZ->forceStopAndNewPosition(_stepperZ->getCurrentPosition());
             if (!rotationHomed && rotationStepper) rotationStepper->forceStopAndNewPosition(rotationStepper->getCurrentPosition());
-            setMachineState(MachineState::ERROR); // Use enum
+            // setMachineState(MachineState::ERROR); // REMOVED - StateMachine handles transition
             return false;
         }
         
@@ -191,7 +191,7 @@ bool Homing::homeAllAxes() {
             _stepperY_Left->forceStopAndNewPosition(_stepperY_Left->getCurrentPosition());
             _stepperY_Right->forceStopAndNewPosition(_stepperY_Right->getCurrentPosition());
             _stepperZ->forceStopAndNewPosition(_stepperZ->getCurrentPosition());
-            setMachineState(MachineState::ERROR); // Use enum
+            // setMachineState(MachineState::ERROR); // REMOVED - StateMachine handles transition
             return false;
         }
         
@@ -229,12 +229,32 @@ bool Homing::homeAllAxes() {
         rotationStepper->setAcceleration(DEFAULT_ROT_ACCEL); // Restore rotation accel too
     }
 
-    // Reset machine state after homing
-    clearMachineState(); // Set back to IDLE
-    
-    Serial.println("** Homing Complete **");
-    return true;
+    bool allHomed = xHomed && yLeftHomed && yRightHomed && zHomed;
+
+    if (allHomed) {
+        Serial.println("All axes homed successfully.");
+        // clearMachineState(); // REMOVED - StateMachine handles transition
+    } else {
+        Serial.println("Homing failed for one or more axes.");
+        // setMachineState(MachineState::ERROR); // REMOVED - StateMachine handles transition/error reporting
+    }
+    return allHomed;
 }
+
+// REMOVED individual homing functions like homeZ() as they were placeholders/not declared in Homing.h
+// If needed, they should be declared in the header and implemented properly.
+/*
+bool Homing::homeZ() {
+    // ... implementation ...
+}
+*/
+
+// REMOVED Homing::exit() as it doesn't belong to this class
+/*
+void Homing::exit() {
+     Serial.println("Exiting Homing State");
+}
+*/
 
 // Placeholder or ensure this is defined elsewhere and included correctly
 // If XYZ_Movements.cpp defines this, ensure it's declared in XYZ_Movements.h

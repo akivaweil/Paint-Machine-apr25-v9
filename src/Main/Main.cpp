@@ -27,6 +27,9 @@ extern PaintingSettings paintingSettings;
 // State machine
 extern StateMachine* stateMachine;
 
+// Define the global flag previously in machine_state.cpp
+volatile bool homeCommandReceived = false;
+
 //* ************************************************************************
 //* ***************************** MAIN *******************************
 //* ************************************************************************
@@ -51,7 +54,7 @@ void loop() {
   ArduinoOTA.handle();
   
   // Update machine state
-  updateMachineState();
+  // updateMachineState();
   
   // Update state machine
   if (stateMachine) {
