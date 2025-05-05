@@ -733,15 +733,18 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             try {
                 console.log('Processing message: ' + message);
                 
-                // Check for machine status updates
-                if (message.startsWith('MACHINE_STATUS:')) {
-                    const statusText = message.substring(15); // Get text after "MACHINE_STATUS:"
+                // --- State Handling --- 
+                if (message.startsWith('STATE:')) {
+                    const stateName = message.substring(6); // Get text after "STATE:"
                     const statusDisplay = document.getElementById('machineStatusDisplay');
                     if (statusDisplay) {
-                        statusDisplay.textContent = statusText;
-                        console.log('Updated machine status display to: ' + statusText);
+                        statusDisplay.textContent = stateName; // Update status display
+                        console.log('Updated machine status display to: ' + stateName);
                     }
+                    updateButtonStates(stateName); // Enable/disable buttons based on state
                 }
+                // Check for machine status updates (REMOVED - Handled by STATE: now)
+                // else if (message.startsWith('MACHINE_STATUS:')) { ... }
                 
                 // Check for pressure pot status updates
                 else if (message.startsWith('PRESSURE_POT_STATUS:')) {
@@ -799,6 +802,53 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             }
         }
         
+        // --- Function to Enable/Disable Buttons based on State --- 
+        function updateButtonStates(stateName) {
+            console.log("Updating button states for state: " + stateName);
+            
+            const isIdle = (stateName === 'IDLE');
+            const isManual = (stateName === 'MANUAL');
+            
+            // Get button elements
+            const paintSide1Btn = document.getElementById('paintSide1Btn');
+            const paintSide2Btn = document.getElementById('paintSide2Btn');
+            const paintSide3Btn = document.getElementById('paintSide3Btn');
+            const paintSide4Btn = document.getElementById('paintSide4Btn');
+            const paintAllSidesBtn = document.getElementById('paintAllSidesBtn');
+            const homeBtn = document.getElementById('homeBtn');
+            const cleanGunBtn = document.getElementById('cleanGunBtn');
+            const pnpButton = document.getElementById('pnpButton');
+            const pressurePotToggle = document.getElementById('pressurePotToggle');
+            const paintGunToggle = document.getElementById('paintGunToggle');
+            
+            // Action buttons (Painting, Homing, Cleaning, PnP Start) - Enabled only when IDLE
+            if (paintSide1Btn) paintSide1Btn.disabled = !isIdle;
+            if (paintSide2Btn) paintSide2Btn.disabled = !isIdle;
+            if (paintSide3Btn) paintSide3Btn.disabled = !isIdle;
+            if (paintSide4Btn) paintSide4Btn.disabled = !isIdle;
+            if (paintAllSidesBtn) paintAllSidesBtn.disabled = !isIdle;
+            if (homeBtn) homeBtn.disabled = !isIdle;
+            if (cleanGunBtn) cleanGunBtn.disabled = !isIdle;
+            if (pnpButton) pnpButton.disabled = !isIdle;
+            
+            // Toggles (Pressure Pot, Paint Gun) - Generally always enabled, 
+            // but you might want to disable them during certain states too?
+            // For now, keeping them enabled.
+            if (pressurePotToggle) {
+                // If you want to disable the toggle itself:
+                // pressurePotToggle.disabled = !isIdle && !isManual; // Example: disable if not idle or manual
+                // Or disable the whole container:
+                // pressurePotToggle.closest('.toggle-switch').style.pointerEvents = (isIdle || isManual) ? 'auto' : 'none';
+                // pressurePotToggle.closest('.toggle-switch').style.opacity = (isIdle || isManual) ? '1' : '0.5';
+            }
+            if (paintGunToggle) {
+                // Similar logic as pressure pot if needed
+            }
+            
+            // Update PnP Button text/action based on state? (Future enhancement)
+            // Update Manual Mode Button? (Add button if needed)
+        }
+
         // Send commands to the ESP32
         function sendCommand(command) {
             if (!websocket || websocket.readyState !== WebSocket.OPEN) {
@@ -835,7 +885,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             }
         }
         
-        // Toggle the pressure pot
+        // Toggle Pressure Pot
         function togglePressurePot(enabled) {
             // Send the command to the device
             const command = enabled ? 'PRESSURE_POT_ON' : 'PRESSURE_POT_OFF';
@@ -855,7 +905,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             console.log(`Toggle Pressure Pot: ${enabled ? 'ON' : 'OFF'}, checked=${toggle.checked}`);
         }
         
-        // Toggle the paint gun
+        // Toggle Paint Gun
         function togglePaintGun(enabled) {
             // Send the command to the device
             const command = enabled ? 'PAINT_GUN_ON' : 'PAINT_GUN_OFF';
@@ -981,7 +1031,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             <!-- Paint Direction Buttons -->
             <div class="direction-buttons-grid">
                 <!-- SIDE 1 button at top center -->
-                <button class="main-btn" title="Paint Side 1" aria-label="Paint Side 1" onclick="sendCommand('PAINT_SIDE_1')" style="grid-column: 2; grid-row: 1;">
+                <button id="paintSide1Btn" class="main-btn" title="Paint Side 1" aria-label="Paint Side 1" onclick="sendCommand('PAINT_SIDE_1')" style="grid-column: 2; grid-row: 1;">
                     <span class="btn-icon" aria-hidden="true">
                         <!-- SVG: Arrow Down -->
                         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M10 4v12M10 16l6-6M10 16l-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -990,7 +1040,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 </button>
 
                 <!-- SIDE 4 button on left side -->
-                <button class="main-btn" title="Paint Side 4" aria-label="Paint Side 4" onclick="sendCommand('PAINT_SIDE_4')" style="grid-column: 1; grid-row: 2;">
+                <button id="paintSide4Btn" class="main-btn" title="Paint Side 4" aria-label="Paint Side 4" onclick="sendCommand('PAINT_SIDE_4')" style="grid-column: 1; grid-row: 2;">
                     <span class="btn-icon" aria-hidden="true">
                         <!-- SVG: Arrow Right -->
                         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M4 10h12M16 10l-6-6M16 10l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -999,7 +1049,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 </button>
 
                 <!-- ALL SIDES button in center -->
-                <button class="main-btn highlight" title="Paint All Sides" aria-label="Paint All Sides" onclick="sendCommand('PAINT_ALL_SIDES')" style="grid-column: 2; grid-row: 2;">
+                <button id="paintAllSidesBtn" class="main-btn highlight" title="Paint All Sides" aria-label="Paint All Sides" onclick="sendCommand('PAINT_ALL_SIDES')" style="grid-column: 2; grid-row: 2;">
                     <span class="btn-icon" aria-hidden="true">
                         <!-- central rectangle with four arrows pointing inward -->
                         <svg width="39" height="39" viewBox="0 0 39 39" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1019,7 +1069,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 </button>
 
                 <!-- SIDE 2 button on right side -->
-                <button class="main-btn" title="Paint Side 2" aria-label="Paint Side 2" onclick="sendCommand('PAINT_SIDE_2')" style="grid-column: 3; grid-row: 2;">
+                <button id="paintSide2Btn" class="main-btn" title="Paint Side 2" aria-label="Paint Side 2" onclick="sendCommand('PAINT_SIDE_2')" style="grid-column: 3; grid-row: 2;">
                     <span class="btn-icon" aria-hidden="true">
                         <!-- SVG: Arrow Left -->
                         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M16 10H4M4 10l6-6M4 10l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1028,7 +1078,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 </button>
 
                 <!-- SIDE 3 button at bottom center -->
-                <button class="main-btn" title="Paint Side 3" aria-label="Paint Side 3" onclick="sendCommand('PAINT_SIDE_3')" style="grid-column: 2; grid-row: 3;">
+                <button id="paintSide3Btn" class="main-btn" title="Paint Side 3" aria-label="Paint Side 3" onclick="sendCommand('PAINT_SIDE_3')" style="grid-column: 2; grid-row: 3;">
                     <span class="btn-icon" aria-hidden="true">
                         <!-- SVG: Arrow Up -->
                         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M10 16V4M10 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1041,14 +1091,14 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
 
             <!-- Utility Buttons -->
             <div class="utility-buttons-grid">
-                <button class="main-btn blue" title="Home All Axes" aria-label="Home" onclick="sendCommand('HOME')">
+                <button id="homeBtn" class="main-btn blue" title="Home All Axes" aria-label="Home" onclick="sendCommand('HOME')">
                     <span class="btn-icon" aria-hidden="true">
                         <!-- SVG: Home -->
                         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M3 10l7-7 7 7M5 8v7a1 1 0 001 1h8a1 1 0 001-1V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </span>
                     <span class="btn-label">HOME</span>
                 </button>
-                <button class="main-btn blue" title="Clean Paint Gun" aria-label="Clean Gun" onclick="sendCommand('CLEAN_GUN')">
+                <button id="cleanGunBtn" class="main-btn blue" title="Clean Paint Gun" aria-label="Clean Gun" onclick="sendCommand('CLEAN_GUN')">
                     <span class="btn-icon" aria-hidden="true">
                         <!-- SVG: Sparkle/Clean -->
                         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="2"/><path d="M10 5v2M10 13v2M5 10h2M13 10h2M7.05 7.05l1.41 1.41M11.54 11.54l1.41 1.41M7.05 12.95l1.41-1.41M11.54 8.46l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>

@@ -1,5 +1,6 @@
 #include "states/PausedState.h"
 #include <Arduino.h>
+#include "system/machine_state.h"
 
 // Define necessary variables or includes specific to PausedState if known
 // #include "settings.h"
@@ -21,4 +22,12 @@ void PausedState::update() {
 void PausedState::exit() {
     Serial.println("Exiting Paused State");
     // Code to run once when exiting the paused state
-} 
+    setMachineState(MachineState::UNKNOWN); // State after pause depends on context
+}
+
+const char* PausedState::getName() const {
+    return "PAUSED";
+}
+
+// REMOVED Banner comment from the end of the file to avoid parsing issues.
+// It should ideally be placed after includes.

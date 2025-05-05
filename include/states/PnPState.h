@@ -4,17 +4,25 @@
 #include <FastAccelStepper.h>
 #include "states/State.h" // Assuming a base State class exists
 #include "utils/settings.h" // For grid dimensions, pins etc.
+#include "motors/ServoMotor.h" // Added include for ServoMotor
 
 // Assuming StateMachine is needed for transitions
 class StateMachine; 
 extern StateMachine* stateMachine; 
 
+// Forward declaration for ServoMotor is no longer needed
+// class ServoMotor; 
+
 class PnPState : public State {
 public:
-    PnPState();
+    PnPState(); // Added parameterless constructor declaration back
     void enter() override;
     void update() override;
     void exit() override;
+    const char* getName() const override;
+
+    // PnP specific methods
+    // void moveToTarget(PnPAction action); // REMOVED - Not implemented/used and PnPAction undefined
 
 private:
     // Grid configuration

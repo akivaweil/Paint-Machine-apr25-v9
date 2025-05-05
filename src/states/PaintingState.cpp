@@ -6,6 +6,8 @@
 #include <FastAccelStepper.h>      // Include for stepper access
 #include "persistence/PaintingSettings.h"
 #include "motors/Rotation_Motor.h"
+#include "system/machine_state.h" // Added include for MachineState enum
+#include "hardware/paintGun_Functions.h" // Added include for paintGun_OFF
 
 // Define necessary variables or includes specific to PaintingState if known
 // #include "settings.h"
@@ -63,5 +65,15 @@ void PaintingState::update() {
 
 void PaintingState::exit() {
     Serial.println("Exiting Painting State");
-    // Code to run once when exiting the painting state
-} 
+    setMachineState(MachineState::UNKNOWN); // Or IDLE if appropriate after painting
+    // Stop paint gun, ensure motors are stopped, etc.
+    paintGun_OFF(); 
+}
+
+const char* PaintingState::getName() const {
+    return "PAINTING";
+}
+
+//* ************************************************************************
+//* ************************** PAINTING STATE ****************************
+//* ************************************************************************ 

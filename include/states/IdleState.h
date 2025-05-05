@@ -13,6 +13,7 @@ public:
     void enter() override;
     void update() override;
     void exit() override;
+    const char* getName() const override;
 
 private:
     Bounce pnpCycleSwitch; // Declare the debouncer object

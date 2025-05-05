@@ -24,7 +24,7 @@ ManualMoveState::ManualMoveState() : isMoving(false) {
 
 void ManualMoveState::enter() {
     Serial.println("Entering Manual Move State");
-    setMachineState(MACHINE_MANUAL_MOVE);
+    setMachineState(MachineState::MANUAL);
     isMoving = false;
 }
 
@@ -40,12 +40,18 @@ void ManualMoveState::update() {
 
 void ManualMoveState::exit() {
     Serial.println("Exiting Manual Move State");
-    clearMachineState();
+    setMachineState(MachineState::UNKNOWN); // Or back to IDLE?
+    // Stop any ongoing movement initiated in this state
+    // e.g., stopAllMotors(); // Might need access to steppers
     isMoving = false;
 }
 
+const char* ManualMoveState::getName() const {
+    return "MANUAL";
+}
+
 void ManualMoveState::moveToPosition(long targetX, long targetY, long targetZ, int targetAngle) {
-    if (getMachineState() != MACHINE_MANUAL_MOVE) {
+    if (getMachineState() != MachineState::MANUAL) {
         Serial.println("Error: Cannot execute manual move outside of Manual Move State.");
         return;
     }

@@ -9,6 +9,7 @@
 #include "system/machine_state.h" // Updated path
 #include "states/State.h"
 #include "states/ManualMoveState.h"
+#include <WebSocketsServer.h> // Added WebSocket header
 
 //* ************************************************************************
 //* ************************* STATE MACHINE *******************************
@@ -16,6 +17,10 @@
 
 // Global state machine pointer
 StateMachine* stateMachine = nullptr;
+
+// Extern declaration for the WebSocket server instance
+// Assuming it's defined in Setup.cpp or Web_Dashboard_Commands.cpp
+extern WebSocketsServer webSocket;
 
 // Flag to prevent circular state changes
 bool inStateTransition = false;
@@ -44,6 +49,8 @@ StateMachine::StateMachine() :
     stateMachine = this;
     
     Serial.println("State Machine initialized with Idle state");
+    // Initial state broadcast might be needed here if webSocket is ready
+    // but it's safer to do it on connect in webSocketEvent
 }
 
 StateMachine::~StateMachine() {
@@ -66,10 +73,13 @@ void StateMachine::changeState(State* newState) {
         return;
     }
     
+    // Use the new getName() method
+    const char* newStateName = newState->getName();
+    
     // Check if already in the target state
     if (currentState == newState) {
         Serial.print("INFO: Already in state: ");
-        Serial.println(getStateName(newState));
+        Serial.println(newStateName);
         return;
     }
 
@@ -78,14 +88,22 @@ void StateMachine::changeState(State* newState) {
     
     if (currentState != nullptr) {
         Serial.print("Changing state from ");
-        Serial.print(getStateName(currentState));
+        Serial.print(currentState->getName()); // Use getName here too
         Serial.print(" to ");
-        Serial.println(getStateName(newState));
+        Serial.println(newStateName);
         currentState->exit();
     }
     
     currentState = newState;
     currentState->enter();
+
+    // --- Broadcast state change --- 
+    String stateMessage = "STATE:";
+    stateMessage += newStateName;
+    webSocket.broadcastTXT(stateMessage);
+    Serial.print("Broadcasted state: ");
+    Serial.println(stateMessage);
+    // ----------------------------
     
     // Clear flag
     inStateTransition = false;
@@ -98,16 +116,13 @@ void StateMachine::update() {
     }
 }
 
-// Helper function to get state name for debugging
+// Helper function to get state name (now uses the virtual method)
 const char* StateMachine::getStateName(State* state) {
-    if (state == idleState) return "Idle";
-    else if (state == homingState) return "Homing";
-    else if (state == paintingState) return "Painting";
-    else if (state == cleaningState) return "Cleaning";
-    else if (state == pausedState) return "Paused";
-    else if (state == pnpState) return "PnP";
-    else if (state == manualMoveState) return "Manual Move";
-    else return "Unknown";
+    if (state != nullptr) {
+        return state->getName();
+    } else {
+        return "Unknown";
+    }
 }
 
 /* // REMOVING this duplicate/incorrect initialize() definition

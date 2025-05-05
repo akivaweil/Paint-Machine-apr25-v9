@@ -1,5 +1,10 @@
 #include "motors/Homing.h"
 #include "motors/XYZ_Movements.h"
+#include <Arduino.h>
+#include <Bounce2.h>
+#include <FastAccelStepper.h>
+#include "utils/settings.h"
+#include "system/machine_state.h" // Include the updated header
 
 // Need access to the global rotation stepper pointer if used
 // This is already included via Rotation_Motor.h in Homing.h
@@ -37,8 +42,8 @@ long Homing::inchesToStepsXYZ(float inches) {
 
 // Implementation of the homing logic, now as a class method
 bool Homing::homeAllAxes() {
-    _isHoming = true;
-    setMachineState(MACHINE_HOMING); // Set global machine state
+    Serial.println("Starting Home All Axes sequence...");
+    setMachineState(MachineState::HOMING); // Use enum
     
     //! STEP 1: Initialize homing sequence
     Serial.println("Starting homing sequence...");
@@ -97,8 +102,7 @@ bool Homing::homeAllAxes() {
             if (!yRightHomed) _stepperY_Right->forceStopAndNewPosition(_stepperY_Right->getCurrentPosition()); // Stop Y Right too
             if (!zHomed) _stepperZ->forceStopAndNewPosition(_stepperZ->getCurrentPosition());
             if (!rotationHomed && rotationStepper) rotationStepper->forceStopAndNewPosition(rotationStepper->getCurrentPosition());
-            setMachineState(MACHINE_ERROR); // Indicate error state
-            _isHoming = false;
+            setMachineState(MachineState::ERROR); // Use enum
             return false;
         }
         
@@ -187,8 +191,7 @@ bool Homing::homeAllAxes() {
             _stepperY_Left->forceStopAndNewPosition(_stepperY_Left->getCurrentPosition());
             _stepperY_Right->forceStopAndNewPosition(_stepperY_Right->getCurrentPosition());
             _stepperZ->forceStopAndNewPosition(_stepperZ->getCurrentPosition());
-            setMachineState(MACHINE_ERROR); // Indicate error state
-            _isHoming = false;
+            setMachineState(MachineState::ERROR); // Use enum
             return false;
         }
         
@@ -230,7 +233,6 @@ bool Homing::homeAllAxes() {
     clearMachineState(); // Set back to IDLE
     
     Serial.println("** Homing Complete **");
-    _isHoming = false;
     return true;
 }
 

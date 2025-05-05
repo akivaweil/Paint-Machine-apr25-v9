@@ -53,7 +53,7 @@ extern FastAccelStepperEngine engine;
 // extern Bounce debounceZ;
 
 HomingState::HomingState() {
-    // Constructor implementation
+    // Constructor implementation (can be empty if nothing needed)
 }
 
 void HomingState::enter() {
@@ -77,18 +77,16 @@ void HomingState::enter() {
              // clearMachineState(); // Called within homeAllAxes on success
              stateMachine->changeState(stateMachine->getIdleState());
         } else {
-             Serial.println("Homing failed, transitioning to IDLE state (or an error state if implemented).");
-             // setMachineState(MACHINE_ERROR); // Called within homeAllAxes on failure
-             // Consider adding a specific error state later if needed
+             Serial.println("Homing failed, transitioning to IDLE state (or an error state if implemented)." );
              stateMachine->changeState(stateMachine->getIdleState());
         }
     } else {
          Serial.println("ERROR: StateMachine pointer is null after homing attempt!");
          // Handle error, maybe manual state setting?
          if (homingSuccess) {
-             clearMachineState();
+             clearMachineState(); // Sets to IDLE
          } else {
-             setMachineState(MACHINE_ERROR);
+             setMachineState(MachineState::ERROR); // Corrected call
          }
     }
 }
@@ -101,6 +99,11 @@ void HomingState::update() {
 void HomingState::exit() {
      Serial.println("Exiting Homing State");
     // No longer need to manage isHoming flag here
+    setMachineState(MachineState::UNKNOWN); // Or IDLE if appropriate after homing
+}
+
+const char* HomingState::getName() const {
+    return "HOMING";
 }
 
 // // Implementation of the homing logic - MOVED TO Homing.cpp

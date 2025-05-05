@@ -275,28 +275,37 @@ void cmdVacuum(bool state) {
 
 void cmdStatus() {
   Serial.println("Machine Status:");
-  
-  // Get and display the current machine state
-  int state = getMachineState();
-  Serial.print("State: ");
+  MachineState state = getMachineState();
+
+  Serial.print("Current State: ");
   switch (state) {
-    case MACHINE_IDLE:
-      Serial.println("IDLE");
+    case MachineState::IDLE:
+      Serial.println("Idle");
       break;
-    case MACHINE_HOMING:
-      Serial.println("HOMING");
+    case MachineState::HOMING:
+      Serial.println("Homing");
       break;
-    case MACHINE_PAINTING:
-      Serial.println("PAINTING");
+    case MachineState::PAINTING:
+      Serial.println("Painting");
       break;
-    case MACHINE_PNP:
-      Serial.println("PICK & PLACE");
+    case MachineState::PNP:
+      Serial.println("Pick & Place");
       break;
-    case MACHINE_ERROR:
-      Serial.println("ERROR");
+    case MachineState::CLEANING:
+      Serial.println("Cleaning");
       break;
+    case MachineState::MANUAL:
+      Serial.println("Manual Move");
+      break;
+    case MachineState::PAUSED:
+      Serial.println("Paused");
+      break;
+    case MachineState::ERROR:
+      Serial.println("Error");
+      break;
+    case MachineState::UNKNOWN:
     default:
-      Serial.println("UNKNOWN");
+      Serial.println("Unknown");
       break;
   }
   

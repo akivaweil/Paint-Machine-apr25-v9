@@ -6,166 +6,137 @@
 //* ************************ MACHINE STATE ****************************
 //* ************************************************************************
 
-// Current machine state
-volatile int currentMachineState = MACHINE_IDLE;
+// Current machine state using the enum
+volatile MachineState currentMachineState = MachineState::IDLE;
 
 // Machine flags
 volatile bool homeCommandReceived = false;
 
-// Set the machine state
-void setMachineState(int state) {
+// Set the machine state using the enum
+void setMachineState(MachineState state) {
     currentMachineState = state;
     
     // Debug output
     Serial.print("Machine state set to: ");
     switch (state) {
-        case MACHINE_IDLE:
+        case MachineState::IDLE:
             Serial.println("IDLE");
-            // Sync with state machine if it exists
-            syncMachineStateWithStateMachine(MACHINE_IDLE);
+            syncMachineStateWithStateMachine(MachineState::IDLE);
             break;
-        case MACHINE_HOMING:
+        case MachineState::HOMING:
             Serial.println("HOMING");
-            syncMachineStateWithStateMachine(MACHINE_HOMING);
+            syncMachineStateWithStateMachine(MachineState::HOMING);
             break;
-        case MACHINE_PAINTING:
+        case MachineState::PAINTING:
             Serial.println("PAINTING");
-            syncMachineStateWithStateMachine(MACHINE_PAINTING);
+            syncMachineStateWithStateMachine(MachineState::PAINTING);
             break;
-        case MACHINE_PNP:
+        case MachineState::PNP:
             Serial.println("PNP");
-            syncMachineStateWithStateMachine(MACHINE_PNP);
+            syncMachineStateWithStateMachine(MachineState::PNP);
             break;
-        case MACHINE_CLEANING:
+        case MachineState::CLEANING:
             Serial.println("CLEANING");
-            syncMachineStateWithStateMachine(MACHINE_CLEANING);
+            syncMachineStateWithStateMachine(MachineState::CLEANING);
             break;
-        case MACHINE_MANUAL_MOVE:
-            Serial.println("MANUAL MOVE");
-            syncMachineStateWithStateMachine(MACHINE_MANUAL_MOVE);
+        case MachineState::MANUAL:
+            Serial.println("MANUAL");
+            syncMachineStateWithStateMachine(MachineState::MANUAL);
             break;
-        case MACHINE_ERROR:
+        case MachineState::PAUSED:
+            Serial.println("PAUSED");
+            syncMachineStateWithStateMachine(MachineState::PAUSED);
+            break;
+        case MachineState::ERROR:
             Serial.println("ERROR");
-            syncMachineStateWithStateMachine(MACHINE_ERROR);
+            syncMachineStateWithStateMachine(MachineState::ERROR);
             break;
+        case MachineState::UNKNOWN: // Fallthrough default
         default:
             Serial.println("UNKNOWN");
+            // Don't sync UNKNOWN state?
             break;
     }
 }
 
-// Clear the machine state (set to idle)
+// Clear the machine state (set to idle or unknown?)
 void clearMachineState() {
-    currentMachineState = MACHINE_IDLE;
-    Serial.println("Machine state cleared to IDLE");
-    
-    // Sync with state machine if it exists
-    syncMachineStateWithStateMachine(MACHINE_IDLE);
+    // Let's set to IDLE as the default cleared state
+    setMachineState(MachineState::IDLE);
+    // Serial.println("Machine state cleared to IDLE"); // setMachineState logs this
 }
 
-// Get the current machine state
-int getMachineState() {
+// Get the current machine state (returns the enum)
+MachineState getMachineState() {
     return currentMachineState;
 }
 
 // Function to sync the numeric machine state with the object-oriented StateMachine
-void syncMachineStateWithStateMachine(int state) {
-    // Only sync if stateMachine exists and if we're not already in a state transition
-    // Use the flag defined within StateMachine.cpp if accessible, otherwise redefine locally.
-    // Assuming 'inStateTransition' is a global or accessible flag from StateMachine.cpp
-    extern bool inStateTransition;
+void syncMachineStateWithStateMachine(MachineState state) { // Use enum
+    extern bool inStateTransition; // Still need this check?
     
     if (stateMachine && !inStateTransition) {
-        // The changeState method in StateMachine now handles the inStateTransition flag internally.
-        // We don't need to manage it here.
-        
         State* currentState = stateMachine->getCurrentState();
         State* targetState = nullptr;
         
         switch(state) {
-            case MACHINE_IDLE:
+            case MachineState::IDLE:
                 targetState = stateMachine->getIdleState();
                 break;
-            case MACHINE_HOMING:
+            case MachineState::HOMING:
                 targetState = stateMachine->getHomingState();
                 break;
-            case MACHINE_PAINTING:
+            case MachineState::PAINTING:
                 targetState = stateMachine->getPaintingState();
                 break;
-            case MACHINE_PNP:
-                // targetState = stateMachine->getPnpState(); // Removed - PnP is now procedural
-                // Serial.println("SYNC: State 3 (Old PnP) requested, but PnP is now procedural. Ignoring state sync.");
-                targetState = stateMachine->getPnpState(); // Re-enable PnP state sync
+            case MachineState::PNP:
+                targetState = stateMachine->getPnpState();
                 break;
-            case MACHINE_CLEANING:
+            case MachineState::CLEANING:
                 targetState = stateMachine->getCleaningState();
                 break;
-            case MACHINE_MANUAL_MOVE:
+            case MachineState::MANUAL:
                 targetState = stateMachine->getManualMoveState();
                 break;
-            // Add more states as needed
-             case MACHINE_ERROR: // Add error state handling if needed
-                 // targetState = stateMachine->getErrorState(); // Assuming an ErrorState exists
+            case MachineState::PAUSED:
+                targetState = stateMachine->getPausedState();
+                break;
+            case MachineState::ERROR: 
                  Serial.println("SYNC: Error state requested, no specific error state object defined yet.");
                  break;
+             case MachineState::UNKNOWN:
              default:
-                Serial.printf("SYNC: Unknown machine state %d requested.\n", state);
+                // Explicitly handle UNKNOWN or default case, maybe don't sync?
+                Serial.println("SYNC: UNKNOWN or invalid state requested.");
                 break;
         }
         
         // Change to target state if it's different from current state and not null
         if (targetState && targetState != currentState) {
-            Serial.println("Syncing numeric state with StateMachine object");
+            Serial.println("Syncing machine_state enum with StateMachine object");
             stateMachine->changeState(targetState);
-        } else if (targetState == currentState) {
-            // Serial.println("SYNC: Already in target state."); // Optional debug msg
-        } else if (!targetState && state != MACHINE_ERROR && state != MACHINE_PNP) { 
-            // Only warn if targetState is null for states that *should* have an object (excluding PnP/Error for now)
-            Serial.printf("SYNC: Could not find StateMachine object for state %d\n", state);
-        }
-        
-        // inStateTransition flag is now handled by changeState
+        } 
+        // Optional logging for other cases removed for brevity
     }
 }
 
 // Update machine state based on current conditions
 void updateMachineState() {
-    // This function is called every loop and processes state transitions
-    // based on the current machine state and conditions
+    // This function might be redundant if state transitions are primarily driven by StateMachine
+    // Kept for now, but review its necessity later.
     
     // Check for home command received flag
     if (homeCommandReceived) {
-        setMachineState(MACHINE_HOMING);
+        setMachineState(MachineState::HOMING);
         homeCommandReceived = false;  // Reset the flag
     }
     
+    // The switch statement here likely doesn't do much if state logic is in State objects.
+    // Consider removing or simplifying this.
+    /*
     switch (currentMachineState) {
-        case MACHINE_IDLE:
-            // Process idle state logic
-            break;
-            
-        case MACHINE_HOMING:
-            // Process homing state logic
-            break;
-            
-        case MACHINE_PAINTING:
-            // Process painting state logic
-            break;
-            
-        case MACHINE_PNP:
-            // Process pick and place state logic
-            break;
-            
-        case MACHINE_CLEANING:
-            // Process cleaning state logic
-            break;
-            
-        case MACHINE_MANUAL_MOVE:
-            // Process manual move logic (mostly handled by state object via WebSocket)
-            break;
-
-        case MACHINE_ERROR:
-            // Process error state logic
-            break;
+        case MachineState::IDLE: break;
+        // ... other cases ...
     }
+    */
 } 

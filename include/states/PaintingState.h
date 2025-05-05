@@ -9,6 +9,7 @@ public:
     void enter() override;
     void update() override;
     void exit() override;
+    const char* getName() const override;
 };
 
 #endif // PAINTING_STATE_H 

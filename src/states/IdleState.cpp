@@ -21,8 +21,14 @@ IdleState::IdleState() {
 
 void IdleState::enter() {
     Serial.println("Entering Idle State");
-    // Set machine state to idle
-    setMachineState(MACHINE_IDLE);
+    // Set machine status or perform actions specific to entering idle
+    setMachineState(MachineState::IDLE); // Update the global state enum
+
+    // Stop motors if they were moving (safety measure)
+    // stopAllMotors(); // Example function call
+
+    // Ensure any indicators (like LEDs) show idle status
+    // setIdleLED(true);
 
     // Initialize the PnP cycle switch debouncer
     pnpCycleSwitch.attach(PNP_CYCLE_SWITCH_PIN, INPUT_PULLDOWN);
@@ -32,6 +38,23 @@ void IdleState::enter() {
 }
 
 void IdleState::update() {
+    // Monitor for events that trigger state changes
+    // e.g., check for button presses, web commands, sensor triggers
+
+    // Example: Check for a start button press
+    // if (digitalRead(START_BUTTON_PIN) == HIGH) {
+    //     stateMachine->changeState(stateMachine->getHomingState()); 
+    // }
+
+    // Example: Check for incoming web command (handled elsewhere, but could be checked here)
+
+    // Keep machine state updated if necessary (though likely done on entry)
+    if (getMachineState() != MachineState::IDLE) {
+         setMachineState(MachineState::IDLE); 
+    }
+
+    // No continuous actions typically occur in Idle
+
     // Update the debouncer
     pnpCycleSwitch.update();
 
@@ -45,11 +68,15 @@ void IdleState::update() {
         }
         return; // Exit update early after transition
     }
-    
-    // Other idle state checks can go here (if any)
 }
 
 void IdleState::exit() {
     Serial.println("Exiting Idle State");
-    // No specific cleanup needed for the switch here, as Bounce2 doesn't require explicit detach typically
+    // Cleanup actions when leaving idle state
+    // e.g., turn off idle indicators
+    // setIdleLED(false);
+}
+
+const char* IdleState::getName() const {
+    return "IDLE";
 } 

@@ -132,6 +132,21 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       {
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[WS] Client #%u connected from %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2], ip[3]);
+        
+        // --- Send current state to newly connected client --- 
+        if (stateMachine && stateMachine->getCurrentState()) {
+            String stateMessage = "STATE:";
+            stateMessage += stateMachine->getCurrentState()->getName();
+            webSocket.sendTXT(num, stateMessage);
+            Serial.print("Sent current state to client #");
+            Serial.print(num);
+            Serial.print(": ");
+            Serial.println(stateMessage);
+        } else {
+            Serial.println("[WS] Could not send initial state: StateMachine or current state is null.");
+            webSocket.sendTXT(num, "STATE:UNKNOWN"); // Send a default
+        }
+        // ------------------------------------------------------
       }
       break;
     
@@ -329,7 +344,8 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     else if (baseCommand == "MOVE_Z_PREVIEW") {
         float z_pos_inch = value1;
         long z_pos_steps = (long)(z_pos_inch * STEPS_PER_INCH_XYZ); // Convert inches to steps
-        if (getMachineState() == MACHINE_IDLE || getMachineState() == MACHINE_PNP) { // Only allow preview moves when idle or in PnP
+        // Compare with enum values
+        if (getMachineState() == MachineState::IDLE || getMachineState() == MachineState::PNP) { 
             Serial.printf("Preview move Z to: %.2f inches (%ld steps)\n", z_pos_inch, z_pos_steps);
             // Get current X and Y to maintain position
             long currentX = stepperX->getCurrentPosition();
@@ -342,7 +358,8 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     }
     else if (baseCommand == "MOVE_SERVO_PREVIEW") {
         int angle = (int)value1;
-        if (getMachineState() == MACHINE_IDLE || getMachineState() == MACHINE_PNP) { // Only allow preview moves when idle or in PnP
+        // Compare with enum values
+        if (getMachineState() == MachineState::IDLE || getMachineState() == MachineState::PNP) { 
              if (angle >= 0 && angle <= 180) {
                  Serial.printf("Preview move Servo to: %d\n", angle);
                  myServo.setAngle(angle);
@@ -357,7 +374,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     }
     else if (baseCommand == "GET_STATUS") {
         // Send current status updates to client
-        Serial.println("Sending status updates to client");
+        Serial.println("GET_STATUS command received");
         
         // Send pressure pot status
         extern bool isPressurePot_ON;
@@ -375,17 +392,17 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
             webSocket->broadcastTXT("PAINT_GUN_STATUS:OFF");
         }
 
-        // Send machine state
-        String stateStr = "UNKNOWN";
-        switch(getMachineState()) {
-            case MACHINE_IDLE: stateStr = "Idle"; break;
-            case MACHINE_HOMING: stateStr = "Homing..."; break;
-            case MACHINE_PAINTING: stateStr = "Painting..."; break;
-            case MACHINE_PNP: stateStr = "Pick & Place Mode"; break;
-            case MACHINE_CLEANING: stateStr = "Cleaning..."; break;
-            case MACHINE_ERROR: stateStr = "Error"; break;
+        // Send machine state using the STATE: prefix consistent with StateMachine broadcasts
+        if (stateMachine && stateMachine->getCurrentState()) {
+            String stateName = stateMachine->getCurrentState()->getName();
+            String stateMessage = "STATE:";
+            stateMessage += stateName;
+            webSocket->sendTXT(num, stateMessage); // Send specifically to the requesting client
+            Serial.println("Sent current state via GET_STATUS: " + stateMessage);
+        } else {
+             Serial.println("[WS] Could not send initial state via GET_STATUS: StateMachine or current state is null.");
+             webSocket->sendTXT(num, "STATE:UNKNOWN"); // Send a default
         }
-        webSocket->broadcastTXT("MACHINE_STATUS:" + stateStr);
     }
     else if (baseCommand == "GET_PATTERN_SETTINGS") {
         // Load and send existing pattern settings using persistence

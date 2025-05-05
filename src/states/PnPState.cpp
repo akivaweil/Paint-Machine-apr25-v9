@@ -37,30 +37,19 @@ PnPState::PnPState() :
 {
     // Constructor: Initialize members. Debouncer needs attach in enter().
     calculateGridPositions();
-    initializeHardware();
+    // initializeHardware(); // Called in enter() instead
 
     // Calculate pick location in steps
     pickLocationX_steps = (long)(PICK_LOCATION_X * STEPS_PER_INCH_XYZ);
     pickLocationY_steps = (long)(PICK_LOCATION_Y * STEPS_PER_INCH_XYZ);
-    Serial.printf("Pick Location Steps: X=%ld, Y=%ld\n", pickLocationX_steps, pickLocationY_steps);
+    Serial.printf("PnPState Constructed. Pick Location Steps: X=%ld, Y=%ld\n", pickLocationX_steps, pickLocationY_steps);
 
-    // Reset state variables
-    currentPnPGridPosition = 0;
-    pnpCycleIsComplete = false;
-    lastCycleTime = millis();  // Set initial cycle time
-    pnp_step = 0; // Start with initial move to pick location
-
-    // --- Initiate FIRST Move to Pick Location (Non-Blocking) ---
-    Serial.println("Initiating initial move to pick location...");
-    moveToPickLocation(true); // Mark as initial move, starts non-blocking move
-
-    Serial.println("PnP State Setup Complete. Initial move started.");
-    Serial.println("NOTE: Starting at position 0 (bottom left) and working up to position 19 (top right at grid origin).");
+    // Don't reset state variables or move here, do it in enter()
 }
 
 void PnPState::enter() {
     Serial.println("Entering PnP State...");
-    setMachineState(MACHINE_PNP); // Use correct constant
+    setMachineState(MachineState::PNP); // Use correct enum from machine_state.h
 
     // Initialize PnP specific things
     calculateGridPositions();
@@ -221,15 +210,14 @@ void PnPState::update() {
 
 
 void PnPState::exit() {
+    setMachineState(MachineState::UNKNOWN); // Or IDLE
     Serial.println("Exiting PnP State");
-    // Maybe turn off vacuum/retract cylinder as a safety measure?
-    vacuumOff();
-    cylinderUp();
-    // Detach interrupts or pins if necessary (debouncer doesn't need detach typically)
-    
-    // Reset any flags specific to this state if needed upon exit by other means
-    // Note: The state machine handles deleting the 'new State()' object,
-    // so PnPState's destructor will be called if defined.
+    // Restore speeds if they were changed
+    // Turn off any PnP specific indicators
+}
+
+const char* PnPState::getName() const {
+    return "PNP";
 }
 
 // --- Private Helper Methods ---
