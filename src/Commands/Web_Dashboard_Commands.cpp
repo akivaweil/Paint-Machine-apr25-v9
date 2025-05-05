@@ -901,6 +901,8 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         webSocket->broadcastTXT(message);
         
         // Servo Angles (Order: 1, 2, 3, 4)
+        // NOTE: Originally read directly from NVS using old keys. Changed to use getters 
+        // from the paintingSettings object to ensure consistency and fix persistence issue.
         message = "SETTING:servoAngleSide1:" + String(paintingSettings.getServoAngleSide1()); // Use getter
         webSocket->broadcastTXT(message);
         message = "SETTING:servoAngleSide2:" + String(paintingSettings.getServoAngleSide2()); // Use getter

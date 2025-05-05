@@ -17,8 +17,8 @@
 extern FastAccelStepper *stepperX;
 extern FastAccelStepper *stepperY_Left;
 extern FastAccelStepper *stepperZ;
-// extern PaintingSettings paintingSettings; // Might not be needed directly here
 extern ServoMotor myServo; // Declare external servo instance
+extern PaintingSettings paintingSettings; // Make sure global instance is accessible
 
 //* ************************************************************************
 //* *************************** SIDE 1 *************************************
@@ -28,9 +28,8 @@ void paintSide1Pattern() {
     Serial.println("Starting Side 1 Pattern Painting");
 
     //! Load Servo Angle
-    // persistence.begin(); // REMOVED
-    int servoAngle = persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90);
-    // persistence.end(); // REMOVED
+    // int servoAngle = persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90); // OLD WAY - REMOVED
+    int servoAngle = paintingSettings.getServoAngleSide1(); // NEW WAY: Use getter
 
     //! Set Servo Angle FIRST
     myServo.setAngle(servoAngle);
@@ -68,78 +67,79 @@ void paintSide1Pattern() {
     long sweepYDistance = (long)(paintingSettings.getSide1SweepY() * STEPS_PER_INCH_XYZ); // Use getter
     long shiftXDistance = (long)(paintingSettings.getSide1ShiftX() * STEPS_PER_INCH_XYZ); // Use getter
 
-    paintGun_ON();
-    currentX += shiftXDistance;
-    moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
-    paintGun_OFF();
-
-    // // Use painting-specific speeds from settings/painting.h
-    // // First sweep: Y+ direction (P2 to P1)
-    // Serial.println("Side 1 Pattern: First sweep Y+ (P2 to P1)");
+    // REMOVE Simple test move
     // paintGun_ON();
-    // currentY += sweepYDistance;
-    // moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    // paintGun_OFF(); // Turn off gun after sweep
-
-    // // Check for home command after sweep
-    // if (checkForHomeCommand()) {
-    //     // Raise to safe Z height before aborting
-    //     moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-    //     Serial.println("Side 1 Pattern Painting ABORTED due to home command");
-    //     return;
-    // }
-
-    // // First shift: X+ direction (P1 to P3)
-    // Serial.println("Side 1 Pattern: Shift X+ (P1 to P3)");
     // currentX += shiftXDistance;
-    // moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+    // moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
+    // paintGun_OFF();
 
-    // // Second sweep: Y- direction (P3 to P4)
-    // Serial.println("Side 1 Pattern: Second sweep Y- (P3 to P4)");
-    // paintGun_ON();  // Turn on gun for sweep
-    // currentY -= sweepYDistance;
-    // moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    // paintGun_OFF(); // Turn off gun after sweep
+    // UNCOMMENTED: Use painting-specific speeds from settings/painting.h
+    // First sweep: Y+ direction (P2 to P1)
+    Serial.println("Side 1 Pattern: First sweep Y+ (P2 to P1)");
+    paintGun_ON();
+    currentY += sweepYDistance;
+    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+    paintGun_OFF(); // Turn off gun after sweep
 
-    // // Check for home command after sweep
-    // if (checkForHomeCommand()) {
-    //     // Raise to safe Z height before aborting
-    //     moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-    //     Serial.println("Side 1 Pattern Painting ABORTED due to home command");
-    //     return;
-    // }
+    // Check for home command after sweep
+    if (checkForHomeCommand()) {
+        // Raise to safe Z height before aborting
+        moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
+        Serial.println("Side 1 Pattern Painting ABORTED due to home command");
+        return;
+    }
 
-    // // Second shift: X+ direction (P4 to P5)
-    // Serial.println("Side 1 Pattern: Shift X+ (P4 to P5)");
-    // currentX += shiftXDistance;
-    // moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+    // First shift: X+ direction (P1 to P3)
+    Serial.println("Side 1 Pattern: Shift X+ (P1 to P3)");
+    currentX += shiftXDistance;
+    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
 
-    // // Third sweep: Y+ direction (P5 to P6)
-    // Serial.println("Side 1 Pattern: Third sweep Y+ (P5 to P6)");
-    // paintGun_ON();  // Turn on gun for sweep
-    // currentY += sweepYDistance;
-    // moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    // paintGun_OFF(); // Turn off gun after sweep
+    // Second sweep: Y- direction (P3 to P4)
+    Serial.println("Side 1 Pattern: Second sweep Y- (P3 to P4)");
+    paintGun_ON();  // Turn on gun for sweep
+    currentY -= sweepYDistance;
+    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+    paintGun_OFF(); // Turn off gun after sweep
 
-    // // Check for home command after sweep
-    // if (checkForHomeCommand()) {
-    //     // Raise to safe Z height before aborting
-    //     moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-    //     Serial.println("Side 1 Pattern Painting ABORTED due to home command");
-    //     return;
-    // }
+    // Check for home command after sweep
+    if (checkForHomeCommand()) {
+        // Raise to safe Z height before aborting
+        moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
+        Serial.println("Side 1 Pattern Painting ABORTED due to home command");
+        return;
+    }
 
-    // // Third shift: X+ direction (P6 to P7)
-    // Serial.println("Side 1 Pattern: Shift X+ (P6 to P7)");
-    // currentX += shiftXDistance;
-    // moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+    // Second shift: X+ direction (P4 to P5)
+    Serial.println("Side 1 Pattern: Shift X+ (P4 to P5)");
+    currentX += shiftXDistance;
+    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
 
-    // // Fourth sweep: Y- direction (P7 to P8)
-    // Serial.println("Side 1 Pattern: Fourth sweep Y- (P7 to P8)");
-    // paintGun_ON();  // Turn on gun for sweep
-    // currentY -= sweepYDistance;
-    // moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    // paintGun_OFF(); // Turn off gun after sweep
+    // Third sweep: Y+ direction (P5 to P6)
+    Serial.println("Side 1 Pattern: Third sweep Y+ (P5 to P6)");
+    paintGun_ON();  // Turn on gun for sweep
+    currentY += sweepYDistance;
+    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+    paintGun_OFF(); // Turn off gun after sweep
+
+    // Check for home command after sweep
+    if (checkForHomeCommand()) {
+        // Raise to safe Z height before aborting
+        moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
+        Serial.println("Side 1 Pattern Painting ABORTED due to home command");
+        return;
+    }
+
+    // Third shift: X+ direction (P6 to P7)
+    Serial.println("Side 1 Pattern: Shift X+ (P6 to P7)");
+    currentX += shiftXDistance;
+    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+
+    // Fourth sweep: Y- direction (P7 to P8)
+    Serial.println("Side 1 Pattern: Fourth sweep Y- (P7 to P8)");
+    paintGun_ON();  // Turn on gun for sweep
+    currentY -= sweepYDistance;
+    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
+    paintGun_OFF(); // Turn off gun after sweep
 
     // Check for home command after sweep
     if (checkForHomeCommand()) {
