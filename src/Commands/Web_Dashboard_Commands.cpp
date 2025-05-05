@@ -132,17 +132,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       {
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[WS] Client #%u connected from %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2], ip[3]);
-        // Send initial status or welcome message if needed
-        // Example: webSocket.sendTXT(num, "Welcome!");
       }
       break;
     
     case WStype_TEXT:
-      // Process the command from the WebSocket
       {
         String command = String((char*)payload);
-        
-        // Pass the client number (num) to processWebCommand
         processWebCommand(&webSocket, num, command); 
       }
       break;
@@ -153,12 +148,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     case WStype_FRAGMENT_BIN_START:
     case WStype_FRAGMENT:
     case WStype_FRAGMENT_FIN:
-      // We don't handle these types
       break;
   }
 }
 
-// Implementation of processWebCommand - updated to accept client number
+// Implementation of processWebCommand
 void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command) {
     Serial.print("Received command from client ");
     Serial.print(num);
@@ -171,28 +165,22 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     float value1 = 0; 
     String message; // Declare message string here for broader scope
     
-    int colonIndex = command.indexOf(':'); // Find the colon
+    int colonIndex = command.indexOf(':');
     
     if (colonIndex == -1) {
-        // No colon found, treat the whole string as the command
         baseCommand = command;
     } else {
-        // Colon found, split into command and value string
         baseCommand = command.substring(0, colonIndex);
         valueStr = command.substring(colonIndex + 1);
-        
-        // Attempt to convert the value string to a float
         value1 = valueStr.toFloat();
-        // Note: toFloat() returns 0.0 if conversion fails, which might be acceptable or require error handling
     }
-    baseCommand.toUpperCase(); // Standardize command
+    baseCommand.toUpperCase();
 
     // --- STATE MACHINE CHECK --- 
-    // Prevent certain actions unless in IDLE state?
     bool isIdle = (stateMachine && stateMachine->getCurrentState() == stateMachine->getIdleState());
     if (!isIdle && 
         (baseCommand == "HOME_ALL" || 
-         baseCommand == "START_PNP" || // Changed from G28
+         baseCommand == "START_PNP" ||
          baseCommand == "PAINT_SIDE_1" || 
          baseCommand == "PAINT_SIDE_4" || 
          baseCommand == "PAINT_SIDE_2" || 
@@ -317,7 +305,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         Serial.println("Websocket: ENTER_PICKPLACE command received. Transitioning to PnPState...");
         if (stateMachine) {
             stateMachine->changeState(stateMachine->getPnpState());
-            webSocket->sendTXT(num, "CMD_ACK: PnP State initiated."); // Use same ACK as START_PNP
+            webSocket->sendTXT(num, "CMD_ACK: PnP State initiated.");
         } else {
             webSocket->sendTXT(num, "CMD_ERROR: StateMachine not available.");
         }
@@ -431,14 +419,13 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         Serial.println("Sent servo angles: " + anglesMsg);
         
         // Servo Angles (Order: 1, 2, 3, 4)
-        // persistence.begin(); // REMOVED - Not needed for load operations
-        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 0));
+        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90));
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 0));
+        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 90));
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 0));
+        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 90));
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 0));
+        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 90));
         webSocket->broadcastTXT(message);
     }
     else if (baseCommand == "SET_PAINT_SPEED") {
@@ -514,274 +501,274 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     else if (baseCommand == "SET_PAINTING_OFFSET_X") { 
         float value = value1;
         paintingSettings.setPaintingOffsetX(value);
-        paintingSettings.saveSettings(); // Save immediately after setting
-        Serial.print("Painting Offset X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Painting Offset X set to (in memory): ");
         Serial.println(paintingSettings.getPaintingOffsetX(), 2);
     }
     else if (baseCommand == "SET_PAINTING_OFFSET_Y") { 
         float value = value1;
         paintingSettings.setPaintingOffsetY(value);
-        paintingSettings.saveSettings(); // Save immediately after setting
-        Serial.print("Painting Offset Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Painting Offset Y set to (in memory): ");
         Serial.println(paintingSettings.getPaintingOffsetY(), 2);
     }
     else if (baseCommand == "SET_SIDE1ZHEIGHT") {
         float value = value1;
         paintingSettings.setSide1ZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide1ZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE2ZHEIGHT") {
         float value = value1;
         paintingSettings.setSide2ZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide2ZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE3ZHEIGHT") {
         float value = value1;
         paintingSettings.setSide3ZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide3ZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE4ZHEIGHT") {
         float value = value1;
         paintingSettings.setSide4ZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide4ZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE1SIDEZHEIGHT") {
         float value = value1;
         paintingSettings.setSide1SideZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Side Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide1SideZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE2SIDEZHEIGHT") {
         float value = value1;
         paintingSettings.setSide2SideZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Side Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide2SideZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE3SIDEZHEIGHT") {
         float value = value1;
         paintingSettings.setSide3SideZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Side Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide3SideZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE4SIDEZHEIGHT") {
         float value = value1;
         paintingSettings.setSide4SideZHeight(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Side Z Height set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide4SideZHeight(), 2);
     }
     else if (baseCommand == "SET_SIDE1SWEEPY") {
         float value = value1;
         paintingSettings.setSide1SweepY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Sweep Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide1SweepY(), 2);
     }
     else if (baseCommand == "SET_SIDE1SHIFTX") {
         float value = value1;
         paintingSettings.setSide1ShiftX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Shift X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide1ShiftX(), 2);
     }
     else if (baseCommand == "SET_SIDE2SWEEPY") {
         float value = value1;
         paintingSettings.setSide2SweepY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Sweep Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide2SweepY(), 2);
     }
     else if (baseCommand == "SET_SIDE2SHIFTX") {
         float value = value1;
         paintingSettings.setSide2ShiftX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Shift X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide2ShiftX(), 2);
     }
     else if (baseCommand == "SET_SIDE3SWEEPY") {
         float value = value1;
         paintingSettings.setSide3SweepY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Sweep Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide3SweepY(), 2);
     }
     else if (baseCommand == "SET_SIDE3SHIFTX") {
         float value = value1;
         paintingSettings.setSide3ShiftX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Shift X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide3ShiftX(), 2);
     }
     else if (baseCommand == "SET_SIDE4SWEEPY") {
         float value = value1;
         paintingSettings.setSide4SweepY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Sweep Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide4SweepY(), 2);
     }
     else if (baseCommand == "SET_SIDE4SHIFTX") {
         float value = value1;
         paintingSettings.setSide4ShiftX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Shift X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide4ShiftX(), 2);
     }
     else if (baseCommand == "SET_SIDE1_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide1RotationAngle(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Rotation Angle set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide1RotationAngle());
     }
     else if (baseCommand == "SET_SIDE2_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide2RotationAngle(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Rotation Angle set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide2RotationAngle());
     }
     else if (baseCommand == "SET_SIDE3_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide3RotationAngle(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Rotation Angle set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide3RotationAngle());
     }
     else if (baseCommand == "SET_SIDE4_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide4RotationAngle(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Rotation Angle set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide4RotationAngle());
     }
     else if (baseCommand == "SET_SIDE1PAINTINGXSPEED") {
         int value = (int)value1;
         paintingSettings.setSide1PaintingXSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Painting X Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide1PaintingXSpeed());
     }
     else if (baseCommand == "SET_SIDE1PAINTINGYSPEED") {
         int value = (int)value1;
         paintingSettings.setSide1PaintingYSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Painting Y Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide1PaintingYSpeed());
     }
     else if (baseCommand == "SET_SIDE2PAINTINGXSPEED") {
         int value = (int)value1;
         paintingSettings.setSide2PaintingXSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Painting X Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide2PaintingXSpeed());
     }
     else if (baseCommand == "SET_SIDE2PAINTINGYSPEED") {
         int value = (int)value1;
         paintingSettings.setSide2PaintingYSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Painting Y Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide2PaintingYSpeed());
     }
     else if (baseCommand == "SET_SIDE3PAINTINGXSPEED") {
         int value = (int)value1;
         paintingSettings.setSide3PaintingXSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Painting X Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide3PaintingXSpeed());
     }
     else if (baseCommand == "SET_SIDE3PAINTINGYSPEED") {
         int value = (int)value1;
         paintingSettings.setSide3PaintingYSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Painting Y Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide3PaintingYSpeed());
     }
     else if (baseCommand == "SET_SIDE4PAINTINGXSPEED") {
         int value = (int)value1;
         paintingSettings.setSide4PaintingXSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Painting X Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide4PaintingXSpeed());
     }
     else if (baseCommand == "SET_SIDE4PAINTINGYSPEED") {
         int value = (int)value1;
         paintingSettings.setSide4PaintingYSpeed(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Painting Y Speed set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide4PaintingYSpeed());
     }
     else if (baseCommand == "SET_SIDE1STARTX") {
         float value = value1;
         paintingSettings.setSide1StartX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Start X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide1StartX(), 2);
     }
     else if (baseCommand == "SET_SIDE1STARTY") {
         float value = value1;
         paintingSettings.setSide1StartY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 1 Start Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 1 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide1StartY(), 2);
     }
     else if (baseCommand == "SET_SIDE2STARTX") {
         float value = value1;
         paintingSettings.setSide2StartX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Start X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide2StartX(), 2);
     }
     else if (baseCommand == "SET_SIDE2STARTY") {
         float value = value1;
         paintingSettings.setSide2StartY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 2 Start Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 2 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide2StartY(), 2);
     }
     else if (baseCommand == "SET_SIDE3STARTX") {
         float value = value1;
         paintingSettings.setSide3StartX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Start X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide3StartX(), 2);
     }
     else if (baseCommand == "SET_SIDE3STARTY") {
         float value = value1;
         paintingSettings.setSide3StartY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 3 Start Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 3 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide3StartY(), 2);
     }
     else if (baseCommand == "SET_SIDE4STARTX") {
         float value = value1;
         paintingSettings.setSide4StartX(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Start X set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide4StartX(), 2);
     }
     else if (baseCommand == "SET_SIDE4STARTY") {
         float value = value1;
         paintingSettings.setSide4StartY(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Side 4 Start Y set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Side 4 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide4StartY(), 2);
     }
     else if (baseCommand == "SET_POSTPRINTPAUSE") { 
         int value = (int)value1;
         paintingSettings.setPostPrintPause(value);
-        paintingSettings.saveSettings(); // Add save
-        Serial.print("Post-Print Pause set to: ");
+        // paintingSettings.saveSettings(); // Remove internal save
+        Serial.print("Post-Print Pause set to (in memory): ");
         Serial.println(paintingSettings.getPostPrintPause());
     }
     else if (baseCommand == "GET_PAINT_SETTINGS") {
@@ -883,7 +870,6 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         webSocket->broadcastTXT(message);
         
         // Servo Angles (Order: 1, 2, 3, 4)
-        // persistence.begin(); // REMOVED - Not needed for load operations
         message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90));
         webSocket->broadcastTXT(message);
         message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 90));
@@ -903,7 +889,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
                 webSocket->sendTXT(num, "CMD_ACK: Manual Move Mode entered.");
             } else {
                 Serial.print("Cannot enter Manual Mode from current state: ");
-                Serial.println(stateMachine->getStateName(currentState));
+                // Serial.println(stateMachine->getStateName(currentState)); // Requires getStateName implementation
                 webSocket->sendTXT(num, "CMD_ERROR: Cannot enter Manual Mode from current state.");
             }
         } else {
@@ -955,7 +941,9 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         }
     }
     else if (baseCommand == "PNP_SAVE_POSITION") {
-        // ... existing code ...
+        // Placeholder - Add implementation if needed
+        Serial.println("PNP_SAVE_POSITION command received - Not implemented");
+        webSocket->sendTXT(num, "CMD_ERROR: PNP_SAVE_POSITION not implemented");
     }
     else {
         // Unknown command
@@ -982,6 +970,7 @@ void processWebSocketEvents() {
 
 // Function to check for HOME command during painting operations
 // Returns true if a home command was received
+extern volatile bool homeCommandReceived; // Assume declared globally
 bool checkForHomeCommand() {
   // Process any pending WebSocket events
   processWebSocketEvents();
@@ -1083,7 +1072,7 @@ void handleDashboardClient() {
               dashboardClient.println("Connection: close");
               dashboardClient.println();
               dashboardClient.println(HTML_PROGMEM);
-              break;
+              break; // Headers processed, response sent
             }
             else if (requestPath.startsWith("/paint?")) { // Check for /paint with parameters
               // Paint command - Parse parameters from requestPath
@@ -1135,7 +1124,7 @@ void handleDashboardClient() {
               response.replace("%MESSAGE%", message);
               dashboardClient.println(response);
               dashboardClient.flush(); // Ensure response is sent before potentially long paint job
-              dashboardClient.stop();  // Close connection
+              dashboardClient.stop();  // Close connection BEFORE painting
 
               // Now execute the paint job if a valid side was given
               if (painted) {
@@ -1147,7 +1136,7 @@ void handleDashboardClient() {
                   else if (side == "all") { /* Call paintAllSides() or similar */ }
                   Serial.println(side + " side painting completed");
               }
-              return; // Important: return after handling paint request
+              return; // Return after handling paint request
             }
             else {
               // Not found
@@ -1156,7 +1145,7 @@ void handleDashboardClient() {
               dashboardClient.println("Connection: close");
               dashboardClient.println();
               dashboardClient.println("<html><body><h1>404 Not Found</h1><p>The requested resource was not found on this server.</p><a href='/'>Back to Dashboard</a></body></html>");
-              break;
+              break; // Headers processed, response sent
             }
           } else {
             // If we got a newline, check if this is the request line
