@@ -196,7 +196,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     // --- COMMAND PROCESSING ---
     if (baseCommand == "STATUS") {
         // Send back current status (e.g., state, positions)
-        sendWebStatus(webSocket, "STATUS_UPDATE"); // Call with a message or update internal logic
+        // sendWebStatus(webSocket, "STATUS_UPDATE"); // Call with a message or update internal logic
                                                    // Assuming sendWebStatus broadcasts or uses webSocket internally
                                                    // If it MUST send to 'num', sendWebStatus needs modification.
     }
@@ -407,26 +407,16 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // persistence.begin(); // REMOVED - Not needed for load operations
         String anglesMsg = "SERVO_ANGLES:";
         anglesMsg += "side1="; // Changed from top
-        anglesMsg += String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90)); // Default 90
+        anglesMsg += String(paintingSettings.getSide1RotationAngle()); // NEW WAY
         anglesMsg += ",side3="; // Changed from bottom
-        anglesMsg += String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 90)); // Default 90
+        anglesMsg += String(paintingSettings.getSide3RotationAngle()); // NEW WAY
         anglesMsg += ",side4="; // Changed from left
-        anglesMsg += String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 90)); // Default 90
+        anglesMsg += String(paintingSettings.getSide4RotationAngle()); // NEW WAY
         anglesMsg += ",side2="; // Changed from right
-        anglesMsg += String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 90)); // Default 90
+        anglesMsg += String(paintingSettings.getSide2RotationAngle()); // NEW WAY
         // persistence.end(); // Keep open if other operations might follow quickly
         webSocket->broadcastTXT(anglesMsg);
         Serial.println("Sent servo angles: " + anglesMsg);
-        
-        // Servo Angles (Order: 1, 2, 3, 4)
-        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90));
-        webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 90));
-        webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 90));
-        webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 90));
-        webSocket->broadcastTXT(message);
     }
     else if (baseCommand == "SET_PAINT_SPEED") {
          persistence.beginTransaction(false);
@@ -454,31 +444,35 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE1") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE1_KEY, angle);
-        persistence.endTransaction();
-        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 1 set and saved");
+        paintingSettings.setSide1RotationAngle(angle); // Update RAM object
+        // persistence.beginTransaction(false);
+        // persistence.saveInt(SERVO_ANGLE_SIDE1_KEY, angle);
+        // persistence.endTransaction();
+        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 1 set and saved"); // Save happens below
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE2") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE2_KEY, angle);
-        persistence.endTransaction();
-        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 2 set and saved");
+        paintingSettings.setSide2RotationAngle(angle); // Update RAM object
+        // persistence.beginTransaction(false);
+        // persistence.saveInt(SERVO_ANGLE_SIDE2_KEY, angle);
+        // persistence.endTransaction();
+        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 2 set and saved"); // Save happens below
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE3") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE3_KEY, angle);
-        persistence.endTransaction();
-        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 3 set and saved");
+        paintingSettings.setSide3RotationAngle(angle); // Update RAM object
+        // persistence.beginTransaction(false);
+        // persistence.saveInt(SERVO_ANGLE_SIDE3_KEY, angle);
+        // persistence.endTransaction();
+        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 3 set and saved"); // Save happens below
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE4") {
         int angle = valueStr.toInt();
-        persistence.beginTransaction(false);
-        persistence.saveInt(SERVO_ANGLE_SIDE4_KEY, angle);
-        persistence.endTransaction();
-        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 4 set and saved");
+        paintingSettings.setSide4RotationAngle(angle); // Update RAM object
+        // persistence.beginTransaction(false);
+        // persistence.saveInt(SERVO_ANGLE_SIDE4_KEY, angle);
+        // persistence.endTransaction();
+        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 4 set and saved"); // Save happens below
     }
     else if (baseCommand == "SAVE_PAINT_SETTINGS") {
         // Save current settings to NVS
@@ -488,7 +482,8 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         Serial.println("Painting settings saved to NVS via SAVE_PAINT_SETTINGS command.");
 
         // Send confirmation message to client
-        String message = "STATUS:Settings saved successfully";
+        // String message = "STATUS:Settings saved successfully"; // message is already declared
+        message = "STATUS:Settings saved successfully"; 
         webSocket->broadcastTXT(message);
     }
     else if (baseCommand == "RESET_PAINT_SETTINGS") {
@@ -504,6 +499,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Painting Offset X set to (in memory): ");
         Serial.println(paintingSettings.getPaintingOffsetX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_PAINTING_OFFSET_Y") { 
         float value = value1;
@@ -511,6 +507,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Painting Offset Y set to (in memory): ");
         Serial.println(paintingSettings.getPaintingOffsetY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1ZHEIGHT") {
         float value = value1;
@@ -518,6 +515,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide1ZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2ZHEIGHT") {
         float value = value1;
@@ -525,6 +523,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide2ZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3ZHEIGHT") {
         float value = value1;
@@ -532,6 +531,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide3ZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4ZHEIGHT") {
         float value = value1;
@@ -539,6 +539,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide4ZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1SIDEZHEIGHT") {
         float value = value1;
@@ -546,6 +547,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide1SideZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2SIDEZHEIGHT") {
         float value = value1;
@@ -553,6 +555,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide2SideZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3SIDEZHEIGHT") {
         float value = value1;
@@ -560,6 +563,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide3SideZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4SIDEZHEIGHT") {
         float value = value1;
@@ -567,6 +571,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Side Z Height set to (in memory): ");
         Serial.println(paintingSettings.getSide4SideZHeight(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1SWEEPY") {
         float value = value1;
@@ -574,6 +579,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide1SweepY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1SHIFTX") {
         float value = value1;
@@ -581,6 +587,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide1ShiftX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2SWEEPY") {
         float value = value1;
@@ -588,6 +595,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide2SweepY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2SHIFTX") {
         float value = value1;
@@ -595,6 +603,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide2ShiftX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3SWEEPY") {
         float value = value1;
@@ -602,6 +611,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide3SweepY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3SHIFTX") {
         float value = value1;
@@ -609,6 +619,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide3ShiftX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4SWEEPY") {
         float value = value1;
@@ -616,6 +627,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Sweep Y set to (in memory): ");
         Serial.println(paintingSettings.getSide4SweepY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4SHIFTX") {
         float value = value1;
@@ -623,6 +635,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Shift X set to (in memory): ");
         Serial.println(paintingSettings.getSide4ShiftX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1_ROTATION") {
         int value = (int)value1;
@@ -630,6 +643,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide1RotationAngle());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2_ROTATION") {
         int value = (int)value1;
@@ -637,6 +651,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide2RotationAngle());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3_ROTATION") {
         int value = (int)value1;
@@ -644,6 +659,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide3RotationAngle());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4_ROTATION") {
         int value = (int)value1;
@@ -651,6 +667,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide4RotationAngle());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1PAINTINGXSPEED") {
         int value = (int)value1;
@@ -658,6 +675,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide1PaintingXSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1PAINTINGYSPEED") {
         int value = (int)value1;
@@ -665,6 +683,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide1PaintingYSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2PAINTINGXSPEED") {
         int value = (int)value1;
@@ -672,6 +691,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide2PaintingXSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2PAINTINGYSPEED") {
         int value = (int)value1;
@@ -679,6 +699,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide2PaintingYSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3PAINTINGXSPEED") {
         int value = (int)value1;
@@ -686,6 +707,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide3PaintingXSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3PAINTINGYSPEED") {
         int value = (int)value1;
@@ -693,6 +715,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide3PaintingYSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4PAINTINGXSPEED") {
         int value = (int)value1;
@@ -700,6 +723,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Painting X Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide4PaintingXSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4PAINTINGYSPEED") {
         int value = (int)value1;
@@ -707,6 +731,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Painting Y Speed set to (in memory): ");
         Serial.println(paintingSettings.getSide4PaintingYSpeed());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1STARTX") {
         float value = value1;
@@ -714,6 +739,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide1StartX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE1STARTY") {
         float value = value1;
@@ -721,6 +747,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide1StartY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2STARTX") {
         float value = value1;
@@ -728,6 +755,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide2StartX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE2STARTY") {
         float value = value1;
@@ -735,6 +763,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide2StartY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3STARTX") {
         float value = value1;
@@ -742,6 +771,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide3StartX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE3STARTY") {
         float value = value1;
@@ -749,6 +779,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide3StartY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4STARTX") {
         float value = value1;
@@ -756,6 +787,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Start X set to (in memory): ");
         Serial.println(paintingSettings.getSide4StartX(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_SIDE4STARTY") {
         float value = value1;
@@ -763,6 +795,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Start Y set to (in memory): ");
         Serial.println(paintingSettings.getSide4StartY(), 2);
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "SET_POSTPRINTPAUSE") { 
         int value = (int)value1;
@@ -770,13 +803,15 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Post-Print Pause set to (in memory): ");
         Serial.println(paintingSettings.getPostPrintPause());
+        paintingSettings.saveSettings(); // Save after setting
     }
     else if (baseCommand == "GET_PAINT_SETTINGS") {
         // Send all current painting settings to the client
         Serial.println("Sending current painting settings to client");
         
         // Paint Gun Offsets
-        String message = "SETTING:paintingOffsetX:" + String(paintingSettings.getPaintingOffsetX(), 2);
+        // String message = "SETTING:paintingOffsetX:" + String(paintingSettings.getPaintingOffsetX(), 2); // message declared above
+        message = "SETTING:paintingOffsetX:" + String(paintingSettings.getPaintingOffsetX(), 2);
         webSocket->broadcastTXT(message);
         message = "SETTING:paintingOffsetY:" + String(paintingSettings.getPaintingOffsetY(), 2);
         webSocket->broadcastTXT(message);
@@ -870,13 +905,13 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         webSocket->broadcastTXT(message);
         
         // Servo Angles (Order: 1, 2, 3, 4)
-        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90));
+        message = "SETTING:servoAngleSide1:" + String(paintingSettings.getSide1RotationAngle());
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 90));
+        message = "SETTING:servoAngleSide2:" + String(paintingSettings.getSide2RotationAngle());
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 90));
+        message = "SETTING:servoAngleSide3:" + String(paintingSettings.getSide3RotationAngle());
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 90));
+        message = "SETTING:servoAngleSide4:" + String(paintingSettings.getSide4RotationAngle());
         webSocket->broadcastTXT(message);
     }
     else if (baseCommand == "ENTER_MANUAL_MODE") {
@@ -1037,7 +1072,7 @@ void handleDashboardClient() {
   dashboardClient = dashboardServer.available();
   if (dashboardClient) {
     String currentLine = "";
-    String request = "";
+    String request = ""; // Initialize request string
     
     while (dashboardClient.connected()) {
       if (dashboardClient.available()) {
@@ -1063,7 +1098,7 @@ void handleDashboardClient() {
               dashboardClient.println("Connection: close");
               dashboardClient.println();
               dashboardClient.println(HTML_PROGMEM);
-              break;
+              // break; // Don't break here, let the client close or timeout
             } 
             else if (requestPath == "/settings") {
               // Settings page - send the same HTML but the client-side JS will show settings
@@ -1072,7 +1107,7 @@ void handleDashboardClient() {
               dashboardClient.println("Connection: close");
               dashboardClient.println();
               dashboardClient.println(HTML_PROGMEM);
-              break; // Headers processed, response sent
+              // break; // Headers processed, response sent, let client close
             }
             else if (requestPath.startsWith("/paint?")) { // Check for /paint with parameters
               // Paint command - Parse parameters from requestPath
@@ -1118,14 +1153,16 @@ void handleDashboardClient() {
               // Send response first
               dashboardClient.println("HTTP/1.1 200 OK");
               dashboardClient.println("Content-Type: text/html");
-              dashboardClient.println("Connection: close");
+              dashboardClient.println("Connection: close"); // Important: signal connection close
               dashboardClient.println();
               String response = String(response_html);
               response.replace("%MESSAGE%", message);
               dashboardClient.println(response);
-              dashboardClient.flush(); // Ensure response is sent before potentially long paint job
-              dashboardClient.stop();  // Close connection BEFORE painting
-
+              dashboardClient.flush(); // Ensure response is sent 
+              // dashboardClient.stop();  // Let the client close the connection after receiving
+              // Delay slightly to ensure data is sent before potentially long operation
+              delay(50);
+              
               // Now execute the paint job if a valid side was given
               if (painted) {
                   Serial.println(message); // Log the action
@@ -1136,7 +1173,7 @@ void handleDashboardClient() {
                   else if (side == "all") { /* Call paintAllSides() or similar */ }
                   Serial.println(side + " side painting completed");
               }
-              return; // Return after handling paint request
+              break; // Break after handling paint request completely
             }
             else {
               // Not found
@@ -1145,11 +1182,13 @@ void handleDashboardClient() {
               dashboardClient.println("Connection: close");
               dashboardClient.println();
               dashboardClient.println("<html><body><h1>404 Not Found</h1><p>The requested resource was not found on this server.</p><a href='/'>Back to Dashboard</a></body></html>");
-              break; // Headers processed, response sent
+              // break; // Let client close
             }
+            // End of request handling, break the inner while loop
+            break; 
           } else {
             // If we got a newline, check if this is the request line
-            if (currentLine.startsWith("GET ")) {
+            if (currentLine.startsWith("GET ") || currentLine.startsWith("POST ")) { // Handle GET or POST
               request = currentLine; // Store the request line
             }
             currentLine = "";
@@ -1160,7 +1199,7 @@ void handleDashboardClient() {
       } // if dashboardClient.available()
     } // while dashboardClient.connected()
     
-    // Close the connection if loop exits cleanly (e.g., client disconnects)
+    // Close the connection 
     dashboardClient.stop();
   } // if dashboardClient
 }
@@ -1188,8 +1227,8 @@ void stopDashboardServer() {
 }
 
 // Global variables for WiFi, WebServer, WebSockets
-WiFiServer server(80);
-String header;
+// WiFiServer server(80); // Duplicate - Remove
+// String header; // Likely unused - Remove
 
 // Function Implementations
 /* REMOVED - Logic moved to Setup.cpp and called via initializeWebCommunications()

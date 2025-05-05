@@ -144,6 +144,7 @@ void PaintingSettings::begin() {
 }
 
 void PaintingSettings::loadSettings() {
+    persistence.beginTransaction(true); // Begin read-only transaction
     // Load using the new key format
     paintingOffsetX = persistence.loadFloat(KEY_OFFSET "x", PAINTING_OFFSET_X);
     paintingOffsetY = persistence.loadFloat(KEY_OFFSET "y", PAINTING_OFFSET_Y);
@@ -192,9 +193,11 @@ void PaintingSettings::loadSettings() {
 
     // Load Post-Print Pause
     postPrintPause = persistence.loadInt(KEY_POST_PRINT_PAUSE "val", 0); // Use a simple key like "pp_val"
+    persistence.endTransaction(); // End read-only transaction
 }
 
 void PaintingSettings::saveSettings() {
+    persistence.beginTransaction(false); // Begin read/write transaction
     // Save using the new key format
     persistence.saveFloat(KEY_OFFSET "x", paintingOffsetX);
     persistence.saveFloat(KEY_OFFSET "y", paintingOffsetY);
@@ -243,6 +246,8 @@ void PaintingSettings::saveSettings() {
 
     // Save Post-Print Pause
     persistence.saveInt(KEY_POST_PRINT_PAUSE "val", postPrintPause);
+    persistence.endTransaction(); // End read/write transaction
+    Serial.println("Painting settings saved to NVS."); // Optional: Confirmation
 }
 
 void PaintingSettings::resetToDefaults() {

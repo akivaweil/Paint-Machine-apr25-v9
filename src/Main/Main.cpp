@@ -1,11 +1,13 @@
 #include <Arduino.h>
-#include "Setup.h"
+// #include "Main.h" // REMOVED - File not found
+#include "core/Setup.h"
 #include "utils/machine_state.h"
 #include <ArduinoOTA.h>
 #include <WebSocketsServer.h>
-#include "states/StateMachine.h"
+#include "system/StateMachine.h"
 #include "motors/ServoMotor.h"
 #include "storage/Persistence.h"
+#include "storage/PaintingSettings.h"
 
 // Include headers for functions called in loop
 #include "web/Web_Dashboard_Commands.h" // For runDashboardServer()
@@ -20,6 +22,7 @@ const unsigned long debounceDelay = 50;
 const int servoPin = 21;
 
 ServoMotor myServo(servoPin);
+extern PaintingSettings paintingSettings;
 
 // State machine
 extern StateMachine* stateMachine;
@@ -34,11 +37,11 @@ void setup() {
 
   initializeSystem();
   
-  // Load the initial angle for Side 1 (or use a default)
-  persistence.beginTransaction(true); // Read-only transaction
-  int initialServoAngle = persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90); // Default to 90 degrees
-  persistence.endTransaction();
-  myServo.init(initialServoAngle); // Initialize servo with loaded/default angle
+  // Initialize servo after settings are loaded
+  // int initialServoAngle = paintingSettings.getSide1RotationAngle(); // Get initial angle from loaded settings
+  int initialServoAngle = 35; // <<< Set initial angle directly to 35
+  myServo.init(initialServoAngle);
+  Serial.printf("Servo Initialized at: %d degrees\n", initialServoAngle);
 
   // Any setup code that *must* run after initializeSystem()
   Serial.println("Setup complete. Entering main loop...");
