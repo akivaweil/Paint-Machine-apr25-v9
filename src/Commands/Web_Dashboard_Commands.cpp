@@ -1,5 +1,7 @@
 #include "web/html_content.h"
 #include <Arduino.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <ESPmDNS.h>
@@ -463,58 +465,40 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         persistence.endTransaction();
         Serial.println("Saved X Overlap: " + String(value1));
     }
-    else if (baseCommand == "SET_SERVO_ANGLE_SIDE1") { // Renamed command
-        int angle = (int)value1;
-        if (angle >= 0 && angle <= 180) {
-            persistence.beginTransaction(false);
-            persistence.saveInt(SERVO_ANGLE_SIDE1_KEY, angle); // Updated key
-            persistence.endTransaction();
-            Serial.println("Saved Front Servo Angle: " + String(angle));
-        } else {
-            Serial.println("Invalid servo angle received: " + String(value1));
-        }
+    else if (baseCommand == "SET_SERVO_ANGLE_SIDE1") {
+        int angle = valueStr.toInt();
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE1_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 1 set and saved");
     }
-    else if (baseCommand == "SET_SERVO_ANGLE_SIDE2") { // Renamed command
-        int angle = (int)value1;
-        if (angle >= 0 && angle <= 180) {
-            persistence.beginTransaction(false);
-            persistence.saveInt(SERVO_ANGLE_SIDE2_KEY, angle); // Updated key
-            persistence.endTransaction();
-            Serial.println("Saved Right Servo Angle: " + String(angle));
-        } else {
-            Serial.println("Invalid servo angle received: " + String(value1));
-        }
+    else if (baseCommand == "SET_SERVO_ANGLE_SIDE2") {
+        int angle = valueStr.toInt();
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE2_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 2 set and saved");
     }
-    else if (baseCommand == "SET_SERVO_ANGLE_SIDE3") { // Renamed command
-        int angle = (int)value1;
-        if (angle >= 0 && angle <= 180) { // Basic validation
-            persistence.beginTransaction(false);
-            persistence.saveInt(SERVO_ANGLE_SIDE3_KEY, angle); // Updated key
-            persistence.endTransaction();
-            Serial.println("Saved Back Servo Angle: " + String(angle));
-        } else {
-            Serial.println("Invalid servo angle received: " + String(value1));
-        }
+    else if (baseCommand == "SET_SERVO_ANGLE_SIDE3") {
+        int angle = valueStr.toInt();
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE3_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 3 set and saved");
     }
-    else if (baseCommand == "SET_SERVO_ANGLE_SIDE4") { // Renamed command
-        int angle = (int)value1;
-        if (angle >= 0 && angle <= 180) {
-            persistence.beginTransaction(false);
-            persistence.saveInt(SERVO_ANGLE_SIDE4_KEY, angle); // Updated key
-            persistence.endTransaction();
-            Serial.println("Saved Left Servo Angle: " + String(angle));
-        } else {
-            Serial.println("Invalid servo angle received: " + String(value1));
-        }
+    else if (baseCommand == "SET_SERVO_ANGLE_SIDE4") {
+        int angle = valueStr.toInt();
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE4_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 4 set and saved");
     }
     else if (baseCommand == "SAVE_PAINT_SETTINGS") {
         // Save current settings to NVS
-        // Preferences are typically saved automatically or when end() is called.
-        // No explicit action needed here as individual saves happened already.
-        // persistence.begin(); // REMOVED - Let paintingSettings.saveSettings handle it if needed
-        paintingSettings.saveSettings(); // Explicitly save all settings managed by PaintingSettings
-        // persistence.end(); // Optionally close and commit everything now.
-        Serial.println("Persistence commit triggered (if needed by Preferences lib).");
+        persistence.beginTransaction(false); // Start write transaction
+        paintingSettings.saveSettings(); // Save all settings managed by PaintingSettings
+        persistence.endTransaction(); // End write transaction
+        Serial.println("Painting settings saved to NVS via SAVE_PAINT_SETTINGS command.");
 
         // Send confirmation message to client
         String message = "STATUS:Settings saved successfully";
@@ -900,13 +884,13 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         
         // Servo Angles (Order: 1, 2, 3, 4)
         // persistence.begin(); // REMOVED - Not needed for load operations
-        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 0));
+        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90));
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 0));
+        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 90));
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 0));
+        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 90));
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 0));
+        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 90));
         webSocket->broadcastTXT(message);
     }
     else if (baseCommand == "ENTER_MANUAL_MODE") {
@@ -1075,7 +1059,15 @@ void handleDashboardClient() {
           if (currentLine.length() == 0) {
             // End of HTTP headers, send response based on the request
             
-            if (request.startsWith("GET / ")) {
+            // Parse the request line *here* 
+            int firstSpace = request.indexOf(' ');
+            int secondSpace = request.indexOf(' ', firstSpace + 1);
+            String requestPath = "";
+            if (firstSpace != -1 && secondSpace != -1) {
+                requestPath = request.substring(firstSpace + 1, secondSpace);
+            }
+            
+            if (requestPath == "/") {
               // Root page - send the dashboard
               dashboardClient.println("HTTP/1.1 200 OK");
               dashboardClient.println("Content-Type: text/html");
@@ -1084,7 +1076,7 @@ void handleDashboardClient() {
               dashboardClient.println(HTML_PROGMEM);
               break;
             } 
-            else if (request.startsWith("GET /settings")) {
+            else if (requestPath == "/settings") {
               // Settings page - send the same HTML but the client-side JS will show settings
               dashboardClient.println("HTTP/1.1 200 OK");
               dashboardClient.println("Content-Type: text/html");
@@ -1093,104 +1085,69 @@ void handleDashboardClient() {
               dashboardClient.println(HTML_PROGMEM);
               break;
             }
-            else if (request.startsWith("GET /paint")) {
-              // Paint command
-              String side = getParameter(request, "side");
-              String message = "Unknown side";
+            else if (requestPath.startsWith("/paint?")) { // Check for /paint with parameters
+              // Paint command - Parse parameters from requestPath
+              String side = "";
+              int qPos = requestPath.indexOf('?');
+              if (qPos != -1) {
+                  String params = requestPath.substring(qPos + 1);
+                  int eqPos = params.indexOf("side=");
+                  if (eqPos != -1) {
+                      side = params.substring(eqPos + 5);
+                      int ampersandPos = side.indexOf('&'); // Remove potential extra params
+                      if (ampersandPos != -1) {
+                          side = side.substring(0, ampersandPos);
+                      }
+                  }
+              }
+                
+              String message = "Unknown side: " + side;
+              bool painted = false;
               
               // Process the paint command
               if (side == "side4") {
                 message = "Painting left side...";
-                dashboardClient.println("HTTP/1.1 200 OK");
-                dashboardClient.println("Content-Type: text/html");
-                dashboardClient.println("Connection: close");
-                dashboardClient.println();
-                
-                String response = String(response_html);
-                response.replace("%MESSAGE%", message);
-                dashboardClient.println(response);
-                
-                dashboardClient.flush();
-                dashboardClient.stop();
-                
-                // Now paint (after client disconnected)
-                Serial.println(message);
-                paintSide4Pattern();
-                Serial.println("Left side painting completed");
-                return;
+                painted = true;
               }
               else if (side == "side2") {
                 message = "Painting right side...";
-                dashboardClient.println("HTTP/1.1 200 OK");
-                dashboardClient.println("Content-Type: text/html");
-                dashboardClient.println("Connection: close");
-                dashboardClient.println();
-                
-                String response = String(response_html);
-                response.replace("%MESSAGE%", message);
-                dashboardClient.println(response);
-                
-                dashboardClient.flush();
-                dashboardClient.stop();
-                
-                // Now paint
-                Serial.println(message);
-                paintSide2Pattern();
-                Serial.println("Right side painting completed");
-                return;
+                painted = true;
               }
               else if (side == "side1") {
                 message = "Painting front side...";
-                dashboardClient.println("HTTP/1.1 200 OK");
-                dashboardClient.println("Content-Type: text/html");
-                dashboardClient.println("Connection: close");
-                dashboardClient.println();
-                
-                String response = String(response_html);
-                response.replace("%MESSAGE%", message);
-                dashboardClient.println(response);
-                
-                dashboardClient.flush();
-                dashboardClient.stop();
-                
-                // Now paint
-                Serial.println(message);
-                paintSide1Pattern();
-                Serial.println("Front side painting completed");
-                return;
+                painted = true;
               }
               else if (side == "side3") {
                 message = "Painting back side...";
-                dashboardClient.println("HTTP/1.1 200 OK");
-                dashboardClient.println("Content-Type: text/html");
-                dashboardClient.println("Connection: close");
-                dashboardClient.println();
-                
-                String response = String(response_html);
-                response.replace("%MESSAGE%", message);
-                dashboardClient.println(response);
-                
-                dashboardClient.flush();
-                dashboardClient.stop();
-                
-                // Now paint
-                Serial.println(message);
-                paintSide3Pattern();
-                Serial.println("Back side painting completed");
-                return;
+                painted = true;
               }
               else if (side == "all") {
                 message = "Painting all sides...";
-                dashboardClient.println("HTTP/1.1 200 OK");
-                dashboardClient.println("Content-Type: text/html");
-                dashboardClient.println("Connection: close");
-                dashboardClient.println();
-                
-                String response = String(response_html);
-                response.replace("%MESSAGE%", message);
-                dashboardClient.println(response);
+                painted = true; // Or handle separately if needed
               }
-              break;
+              
+              // Send response first
+              dashboardClient.println("HTTP/1.1 200 OK");
+              dashboardClient.println("Content-Type: text/html");
+              dashboardClient.println("Connection: close");
+              dashboardClient.println();
+              String response = String(response_html);
+              response.replace("%MESSAGE%", message);
+              dashboardClient.println(response);
+              dashboardClient.flush(); // Ensure response is sent before potentially long paint job
+              dashboardClient.stop();  // Close connection
+
+              // Now execute the paint job if a valid side was given
+              if (painted) {
+                  Serial.println(message); // Log the action
+                  if (side == "side4") paintSide4Pattern();
+                  else if (side == "side2") paintSide2Pattern();
+                  else if (side == "side1") paintSide1Pattern();
+                  else if (side == "side3") paintSide3Pattern();
+                  else if (side == "all") { /* Call paintAllSides() or similar */ }
+                  Serial.println(side + " side painting completed");
+              }
+              return; // Important: return after handling paint request
             }
             else {
               // Not found
@@ -1204,19 +1161,19 @@ void handleDashboardClient() {
           } else {
             // If we got a newline, check if this is the request line
             if (currentLine.startsWith("GET ")) {
-              request = currentLine;
+              request = currentLine; // Store the request line
             }
             currentLine = "";
           }
         } else if (c != '\r') {
           currentLine += c;
         }
-      }
-    }
+      } // if dashboardClient.available()
+    } // while dashboardClient.connected()
     
-    // Close the connection
+    // Close the connection if loop exits cleanly (e.g., client disconnects)
     dashboardClient.stop();
-  }
+  } // if dashboardClient
 }
 
 void runDashboardServer() {

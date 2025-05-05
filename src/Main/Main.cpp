@@ -5,6 +5,7 @@
 #include <WebSocketsServer.h>
 #include "states/StateMachine.h"
 #include "motors/ServoMotor.h"
+#include "storage/Persistence.h"
 
 // Include headers for functions called in loop
 #include "web/Web_Dashboard_Commands.h" // For runDashboardServer()
@@ -33,7 +34,11 @@ void setup() {
 
   initializeSystem();
   
-  myServo.init(60);
+  // Load the initial angle for Side 1 (or use a default)
+  persistence.beginTransaction(true); // Read-only transaction
+  int initialServoAngle = persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 90); // Default to 90 degrees
+  persistence.endTransaction();
+  myServo.init(initialServoAngle); // Initialize servo with loaded/default angle
 
   // Any setup code that *must* run after initializeSystem()
   Serial.println("Setup complete. Entering main loop...");
