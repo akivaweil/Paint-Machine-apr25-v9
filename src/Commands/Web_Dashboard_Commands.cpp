@@ -444,35 +444,31 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE1") {
         int angle = valueStr.toInt();
-        paintingSettings.setSide1RotationAngle(angle); // Update RAM object
-        // persistence.beginTransaction(false);
-        // persistence.saveInt(SERVO_ANGLE_SIDE1_KEY, angle);
-        // persistence.endTransaction();
-        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 1 set and saved"); // Save happens below
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE1_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 1 set and saved");
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE2") {
         int angle = valueStr.toInt();
-        paintingSettings.setSide2RotationAngle(angle); // Update RAM object
-        // persistence.beginTransaction(false);
-        // persistence.saveInt(SERVO_ANGLE_SIDE2_KEY, angle);
-        // persistence.endTransaction();
-        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 2 set and saved"); // Save happens below
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE2_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 2 set and saved");
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE3") {
         int angle = valueStr.toInt();
-        paintingSettings.setSide3RotationAngle(angle); // Update RAM object
-        // persistence.beginTransaction(false);
-        // persistence.saveInt(SERVO_ANGLE_SIDE3_KEY, angle);
-        // persistence.endTransaction();
-        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 3 set and saved"); // Save happens below
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE3_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 3 set and saved");
     }
     else if (baseCommand == "SET_SERVO_ANGLE_SIDE4") {
         int angle = valueStr.toInt();
-        paintingSettings.setSide4RotationAngle(angle); // Update RAM object
-        // persistence.beginTransaction(false);
-        // persistence.saveInt(SERVO_ANGLE_SIDE4_KEY, angle);
-        // persistence.endTransaction();
-        // webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 4 set and saved"); // Save happens below
+        persistence.beginTransaction(false);
+        persistence.saveInt(SERVO_ANGLE_SIDE4_KEY, angle);
+        persistence.endTransaction();
+        webSocket->sendTXT(num, "CMD_ACK: Servo Angle Side 4 set and saved");
     }
     else if (baseCommand == "SAVE_PAINT_SETTINGS") {
         // Save current settings to NVS
@@ -640,34 +636,30 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     else if (baseCommand == "SET_SIDE1_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide1RotationAngle(value);
-        // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 1 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide1RotationAngle());
-        paintingSettings.saveSettings(); // Save after setting
+        paintingSettings.saveSettings(); // CORRECT - Keep save here for actual rotation setting
     }
     else if (baseCommand == "SET_SIDE2_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide2RotationAngle(value);
-        // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 2 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide2RotationAngle());
-        paintingSettings.saveSettings(); // Save after setting
+        paintingSettings.saveSettings(); // CORRECT - Keep save here for actual rotation setting
     }
     else if (baseCommand == "SET_SIDE3_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide3RotationAngle(value);
-        // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 3 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide3RotationAngle());
-        paintingSettings.saveSettings(); // Save after setting
+        paintingSettings.saveSettings(); // CORRECT - Keep save here for actual rotation setting
     }
     else if (baseCommand == "SET_SIDE4_ROTATION") {
         int value = (int)value1;
         paintingSettings.setSide4RotationAngle(value);
-        // paintingSettings.saveSettings(); // Remove internal save
         Serial.print("Side 4 Rotation Angle set to (in memory): ");
         Serial.println(paintingSettings.getSide4RotationAngle());
-        paintingSettings.saveSettings(); // Save after setting
+        paintingSettings.saveSettings(); // CORRECT - Keep save here for actual rotation setting
     }
     else if (baseCommand == "SET_SIDE1PAINTINGXSPEED") {
         int value = (int)value1;
@@ -905,13 +897,13 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
         webSocket->broadcastTXT(message);
         
         // Servo Angles (Order: 1, 2, 3, 4)
-        message = "SETTING:servoAngleSide1:" + String(paintingSettings.getSide1RotationAngle());
+        message = "SETTING:servoAngleSide1:" + String(persistence.loadInt(SERVO_ANGLE_SIDE1_KEY, 35)); // Use NVS key, default 35
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide2:" + String(paintingSettings.getSide2RotationAngle());
+        message = "SETTING:servoAngleSide2:" + String(persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 35)); // Use NVS key, default 35
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide3:" + String(paintingSettings.getSide3RotationAngle());
+        message = "SETTING:servoAngleSide3:" + String(persistence.loadInt(SERVO_ANGLE_SIDE3_KEY, 35)); // Use NVS key, default 35
         webSocket->broadcastTXT(message);
-        message = "SETTING:servoAngleSide4:" + String(paintingSettings.getSide4RotationAngle());
+        message = "SETTING:servoAngleSide4:" + String(persistence.loadInt(SERVO_ANGLE_SIDE4_KEY, 35)); // Use NVS key, default 35
         webSocket->broadcastTXT(message);
     }
     else if (baseCommand == "ENTER_MANUAL_MODE") {

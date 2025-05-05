@@ -57,6 +57,10 @@ extern Persistence persistence;
 // const char* const SERVO_ANGLE_SIDE2_KEY = "srvAng2"; // REMOVED - Handled by PaintingSettings
 // const char* const SERVO_ANGLE_SIDE3_KEY = "srvAng3"; // REMOVED - Handled by PaintingSettings
 // const char* const SERVO_ANGLE_SIDE4_KEY = "srvAng4"; // REMOVED - Handled by PaintingSettings
+const char* const SERVO_ANGLE_SIDE1_KEY = "srvAng1"; // Re-added
+const char* const SERVO_ANGLE_SIDE2_KEY = "srvAng2"; // Re-added
+const char* const SERVO_ANGLE_SIDE3_KEY = "srvAng3"; // Re-added
+const char* const SERVO_ANGLE_SIDE4_KEY = "srvAng4"; // Re-added
 
 // Keys for other painting settings
 const char* const PAINT_SPEED_KEY = "pntSpd";
