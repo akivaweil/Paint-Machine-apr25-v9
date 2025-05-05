@@ -7,7 +7,6 @@
 #include <FastAccelStepper.h>
 #include "../../include/persistence/PaintingSettings.h" // Include for accessing saved settings
 #include "../../include/settings/painting.h"         // For painting-specific constants (SIDE1_Z_HEIGHT etc.)
-#include "../../include/persistence/persistence.h"     // For loading servo angle
 #include "../../include/motors/ServoMotor.h"         // For ServoMotor class
 #include "states/PaintingState.h" // Correct filename
 #include "settings/pins.h"        // Keep this one
@@ -61,27 +60,20 @@ void paintSide1Pattern() {
     //! STEP 4: Lower to painting Z height
     moveToXYZ(startX, DEFAULT_X_SPEED, startY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
 
-    //! STEP 5: Execute side 1 painting pattern
+    //! STEP 5: Execute simplified side 1 painting pattern (Single X Shift)
     long currentX = startX;
     long currentY = startY;
-    long sweepYDistance = (long)(paintingSettings.getSide1SweepY() * STEPS_PER_INCH_XYZ); // Use getter
-    long shiftXDistance = (long)(paintingSettings.getSide1ShiftX() * STEPS_PER_INCH_XYZ); // Use getter
+    long shiftXDistance = (long)(paintingSettings.getSide1ShiftX() * STEPS_PER_INCH_XYZ); // Use getter for shift distance
+    long xSpeed = paintingSettings.getSide1PaintingXSpeed(); // Use getter for X speed
+    long ySpeed = paintingSettings.getSide1PaintingYSpeed(); // Use getter for Y speed (though Y isn't moving)
 
-    // REMOVE Simple test move
-    // paintGun_ON();
-    // currentX += shiftXDistance;
-    // moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
-    // paintGun_OFF();
-
-    // UNCOMMENTED: Use painting-specific speeds from settings/painting.h
-    // First sweep: Y+ direction (P2 to P1)
-    Serial.println("Side 1 Pattern: First sweep Y+ (P2 to P1)");
+    Serial.println("Side 1 Pattern: Performing single X shift");
     paintGun_ON();
-    currentY += sweepYDistance;
-    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    paintGun_OFF(); // Turn off gun after sweep
+    currentX += shiftXDistance; // Calculate target X position
+    moveToXYZ(currentX, xSpeed, currentY, ySpeed, zPos, DEFAULT_Z_SPEED); // Move to target X at painting Z
+    paintGun_OFF(); // Turn off gun after the move
 
-    // Check for home command after sweep
+    // Check for home command after the single move
     if (checkForHomeCommand()) {
         // Raise to safe Z height before aborting
         moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
@@ -89,67 +81,7 @@ void paintSide1Pattern() {
         return;
     }
 
-    // First shift: X+ direction (P1 to P3)
-    Serial.println("Side 1 Pattern: Shift X+ (P1 to P3)");
-    currentX += shiftXDistance;
-    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-
-    // Second sweep: Y- direction (P3 to P4)
-    Serial.println("Side 1 Pattern: Second sweep Y- (P3 to P4)");
-    paintGun_ON();  // Turn on gun for sweep
-    currentY -= sweepYDistance;
-    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    paintGun_OFF(); // Turn off gun after sweep
-
-    // Check for home command after sweep
-    if (checkForHomeCommand()) {
-        // Raise to safe Z height before aborting
-        moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-        Serial.println("Side 1 Pattern Painting ABORTED due to home command");
-        return;
-    }
-
-    // Second shift: X+ direction (P4 to P5)
-    Serial.println("Side 1 Pattern: Shift X+ (P4 to P5)");
-    currentX += shiftXDistance;
-    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-
-    // Third sweep: Y+ direction (P5 to P6)
-    Serial.println("Side 1 Pattern: Third sweep Y+ (P5 to P6)");
-    paintGun_ON();  // Turn on gun for sweep
-    currentY += sweepYDistance;
-    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    paintGun_OFF(); // Turn off gun after sweep
-
-    // Check for home command after sweep
-    if (checkForHomeCommand()) {
-        // Raise to safe Z height before aborting
-        moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-        Serial.println("Side 1 Pattern Painting ABORTED due to home command");
-        return;
-    }
-
-    // Third shift: X+ direction (P6 to P7)
-    Serial.println("Side 1 Pattern: Shift X+ (P6 to P7)");
-    currentX += shiftXDistance;
-    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-
-    // Fourth sweep: Y- direction (P7 to P8)
-    Serial.println("Side 1 Pattern: Fourth sweep Y- (P7 to P8)");
-    paintGun_ON();  // Turn on gun for sweep
-    currentY -= sweepYDistance;
-    moveToXYZ(currentX, paintingSettings.getSide1PaintingXSpeed(), currentY, paintingSettings.getSide1PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // Use getters for speed
-    paintGun_OFF(); // Turn off gun after sweep
-
-    // Check for home command after sweep
-    if (checkForHomeCommand()) {
-        // Raise to safe Z height before aborting
-        moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-        Serial.println("Side 1 Pattern Painting ABORTED due to home command");
-        return;
-    }
-
-    //! STEP 8: Raise to safe Z height
+    //! STEP 6: Raise to safe Z height (Was STEP 8)
     moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
 
     Serial.println("Side 1 Pattern Painting Completed");

@@ -16,6 +16,7 @@ extern FastAccelStepper *stepperX;
 extern FastAccelStepper *stepperY_Left;
 extern FastAccelStepper *stepperZ;
 extern ServoMotor myServo;
+extern PaintingSettings paintingSettings; // Make sure global instance is accessible
 
 //* ************************************************************************
 //* ************************** SIDE 2 PAINTING **************************
@@ -45,7 +46,7 @@ void paintSide2Pattern() {
 
     //! Load Servo Angle
     // persistence.begin(); // REMOVED
-    int servoAngle = persistence.loadInt(SERVO_ANGLE_SIDE2_KEY, 90);
+    int servoAngle = paintingSettings.getServoAngleSide2(); // NEW WAY: Use getter
     // float startX = persistence.loadFloat(KEY_START_X SIDE_2, 0.0);
     // float startY = persistence.loadFloat(KEY_START_Y SIDE_2, 0.0);
     // ... load other needed settings ...

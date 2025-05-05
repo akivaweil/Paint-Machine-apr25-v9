@@ -63,7 +63,11 @@ bool Homing::homeAllAxes() {
     
     //! STEP 4: Start all motors moving toward home switches
     Serial.println("Moving all axes toward home switches...");
-    _stepperX->runBackward();
+    // Debug: Check direction pin state BEFORE runBackward()
+    pinMode(X_DIR_PIN, OUTPUT); // Ensure pin mode is set if not already
+    Serial.printf("  DEBUG: X_DIR_PIN (%d) state before runBackward: %d\n", X_DIR_PIN, digitalRead(X_DIR_PIN));
+    _stepperX->runBackward(); 
+    Serial.printf("  DEBUG: X_DIR_PIN (%d) state AFTER runBackward: %d\n", X_DIR_PIN, digitalRead(X_DIR_PIN));
     _stepperY_Left->runBackward();
     _stepperY_Right->runBackward();
     _stepperZ->runForward(); //? Z moves forward (UP) to home
@@ -162,13 +166,17 @@ bool Homing::homeAllAxes() {
     _stepperY_Right->setAcceleration(HOMING_MOVE_AWAY_ACCEL_Y);
     _stepperZ->setAcceleration(HOMING_MOVE_AWAY_ACCEL_Z);
     
+    // Debug: Check direction pin state BEFORE moveTo positive
+    Serial.printf("  DEBUG: X_DIR_PIN (%d) state before moveTo(%ld): %d\n", X_DIR_PIN, moveAwaySteps, digitalRead(X_DIR_PIN));
     _stepperX->moveTo(moveAwaySteps, false); //? Non-blocking start
+    Serial.printf("  DEBUG: X_DIR_PIN (%d) state AFTER moveTo(%ld): %d\n", X_DIR_PIN, moveAwaySteps, digitalRead(X_DIR_PIN));
     _stepperY_Left->moveTo(moveAwaySteps, false);
     _stepperY_Right->moveTo(moveAwaySteps, false);
     _stepperZ->moveTo(-moveAwaySteps, false); //? Z moves DOWN (negative) to move away
     
     //! STEP 9: Wait for all motors to complete the move away
     startTime = millis(); // Reset timer for move away
+    unsigned long lastPrintTime = 0; // Debug print timer
     while (_stepperX->isRunning() || 
            _stepperY_Left->isRunning() || 
            _stepperY_Right->isRunning() || 
@@ -183,6 +191,17 @@ bool Homing::homeAllAxes() {
             _isHoming = false;
             return false;
         }
+        
+        //! Debug prints every 250ms
+        if (millis() - lastPrintTime > 250) {
+            Serial.printf("  MoveAway Status: X_run=%d (pos:%ld), YL_run=%d (pos:%ld), YR_run=%d (pos:%ld), Z_run=%d (pos:%ld)\n",
+                          _stepperX->isRunning(), _stepperX->getCurrentPosition(),
+                          _stepperY_Left->isRunning(), _stepperY_Left->getCurrentPosition(),
+                          _stepperY_Right->isRunning(), _stepperY_Right->getCurrentPosition(),
+                          _stepperZ->isRunning(), _stepperZ->getCurrentPosition());
+            lastPrintTime = millis();
+        }
+        
         yield(); // Allow other tasks to run
     }
     
