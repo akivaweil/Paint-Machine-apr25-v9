@@ -6,7 +6,7 @@
 #include "../../include/hardware/pressurePot_Functions.h"
 #include <FastAccelStepper.h>
 #include "../../include/settings/painting.h"
-#include "../../include/persistence/persistence.h"
+// #include "../../include/persistence/persistence.h" // Removed as unused and causing linter error
 #include "../../include/motors/ServoMotor.h"
 #include "../../include/persistence/PaintingSettings.h"
 #include "../../include/web/Web_Dashboard_Commands.h"
@@ -86,6 +86,15 @@ void paintSide2Pattern() {
     long sweepYDistance = (long)(paintingSettings.getSide2SweepY() * STEPS_PER_INCH_XYZ);
     long shiftXDistance = (long)(paintingSettings.getSide2ShiftX() * STEPS_PER_INCH_XYZ);
 
+    //! TEST MODIFICATION: Calculate starting point for the last two sweeps (at P6)
+    //! and move there. This skips the first 3 sweeps and 2 shifts.
+    Serial.println("Side 2 Pattern: TEST MODE - Calculating start for last two sweeps (P6 equivalent)");
+    currentX = startX - (2 * shiftXDistance); // Calculated X for P6
+    currentY = startY - sweepYDistance;      // Calculated Y for P6
+    moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
+    Serial.println("Side 2 Pattern: TEST MODE - Moved to P6 equivalent position.");
+
+    /* // Original First three sweeps and two shifts - COMMENTED OUT FOR TEST
     // First sweep: Y- direction (P1 to P2)
     Serial.println("Side 2 Pattern: First sweep Y-");
     paintGun_ON();
@@ -140,14 +149,15 @@ void paintSide2Pattern() {
         Serial.println("Side 2 Pattern Painting ABORTED due to home command");
         return;
     }
+    */ // END OF COMMENTED OUT SECTION
 
     // Third shift: X- direction (P6 to P7)
-    Serial.println("Side 2 Pattern: Shift X-");
+    Serial.println("Side 2 Pattern: Shift X- (P6 to P7)"); // Clarified comment
     currentX -= shiftXDistance;
     moveToXYZ(currentX, paintingSettings.getSide2PaintingXSpeed(), currentY, paintingSettings.getSide2PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
 
     // Fourth sweep: Y+ direction (P7 to P8)
-    Serial.println("Side 2 Pattern: Fourth sweep Y+");
+    Serial.println("Side 2 Pattern: Fourth sweep Y+ (P7 to P8)"); // Clarified comment
     paintGun_ON();
     currentY += sweepYDistance;
     moveToXYZ(currentX, paintingSettings.getSide2PaintingXSpeed(), currentY, paintingSettings.getSide2PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
@@ -162,12 +172,12 @@ void paintSide2Pattern() {
     }
 
     // Fourth shift: X- direction (P8 to P9)
-    Serial.println("Side 2 Pattern: Shift X-");
+    Serial.println("Side 2 Pattern: Shift X- (P8 to P9)"); // Clarified comment
     currentX -= shiftXDistance;
     moveToXYZ(currentX, paintingSettings.getSide2PaintingXSpeed(), currentY, paintingSettings.getSide2PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
 
     // Fifth sweep: Y- direction (P9 to P10)
-    Serial.println("Side 2 Pattern: Fifth sweep Y-");
+    Serial.println("Side 2 Pattern: Fifth sweep Y- (P9 to P10)"); // Clarified comment
     paintGun_ON();
     currentY -= sweepYDistance;
     moveToXYZ(currentX, paintingSettings.getSide2PaintingXSpeed(), currentY, paintingSettings.getSide2PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
@@ -182,7 +192,7 @@ void paintSide2Pattern() {
     }
 
     // Fifth shift: X- direction (after P10)
-    Serial.println("Side 2 Pattern: Final shift X-");
+    Serial.println("Side 2 Pattern: Final shift X- (after P10)"); // Clarified comment
     currentX -= shiftXDistance;
     moveToXYZ(currentX, paintingSettings.getSide2PaintingXSpeed(), currentY, paintingSettings.getSide2PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
 
