@@ -148,7 +148,7 @@ void paintAllSides() {
     
     Serial.println("Homing successful. Starting X-axis loading bar movement over an expected duration of " + String(ALL_SIDES_REPEAT_DELAY_MS / 1000) + "s.");
 
-    const float LOADING_BAR_X_INCHES = 20.0f;
+    const float LOADING_BAR_X_INCHES = 30.0f;
     long target_x_loading_bar_steps = (long)(LOADING_BAR_X_INCHES * STEPS_PER_INCH_XYZ); // X is at 0 after homing
     float duration_seconds = ALL_SIDES_REPEAT_DELAY_MS / 1000.0f;
 
