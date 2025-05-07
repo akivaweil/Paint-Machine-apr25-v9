@@ -2,12 +2,14 @@
 #include <Arduino.h>
 #include "motors/PaintingSides.h" // Include header for paintAllSides
 #include "system/StateMachine.h"  // Include header for StateMachine access
-#include "motors/Homing.h"        // Include the Homing class header
+// #include "motors/Homing.h"        // REMOVE: Homing will be handled by HomingState
 #include <FastAccelStepper.h>      // Include for stepper access
 #include "persistence/PaintingSettings.h"
 #include "motors/Rotation_Motor.h"
 // #include "system/machine_state.h" // No longer needed
 #include "hardware/paintGun_Functions.h" // Added include for paintGun_OFF
+#include "motors/XYZ_Movements.h"      // ADDED: For moveToXYZ
+#include "utils/settings.h"            // ADDED: For default speeds
 
 // Define necessary variables or includes specific to PaintingState if known
 // #include "settings.h"
@@ -31,29 +33,26 @@ PaintingState::PaintingState() {
 }
 
 void PaintingState::enter() {
-    Serial.println("Entering Painting State");
+    Serial.println("Entering Painting State (All Sides)");
     // setMachineState(MachineState::PAINTING); // REMOVED
     
     paintAllSides(); // Call the function to paint all sides
 
-    // Create a local Homing controller instance and home axes
-    Serial.println("Painting complete. Initiating homing...");
-    Homing homingController(engine, stepperX, stepperY_Left, stepperY_Right, stepperZ);
-    bool homingSuccess = homingController.homeAllAxes(); // Call the member function
-
-    // After painting and homing are complete, transition back to Idle
-    if (homingSuccess) {
-        Serial.println("Painting & Homing complete. Transitioning back to Idle.");
-    } else {
-        Serial.println("Painting complete, but Homing FAILED. Transitioning back to Idle anyway.");
-        // Consider transitioning to an Error state here if you have one
-    }
+    // After painting is complete, move to 0,0,0 then transition to HomingState
+    Serial.println("All Sides Painting complete. Moving to 0,0,0 before transitioning to Homing State...");
+    moveToXYZ(0, DEFAULT_X_SPEED, 0, DEFAULT_Y_SPEED, 0, DEFAULT_Z_SPEED); 
     
     if (stateMachine) {
-        stateMachine->changeState(stateMachine->getIdleState());
+        stateMachine->changeState(stateMachine->getHomingState());
     } else {
-        Serial.println("Error: StateMachine pointer is null in PaintingState::enter()");
-        // Fallback?
+        Serial.println("Error: StateMachine pointer is null in PaintingState::enter(). Cannot transition to Homing.");
+        // Attempt to go to Idle as a fallback if HomingState transition fails,
+        // though this part might not be reached if stateMachine is null.
+        if (stateMachine && stateMachine->getIdleState()) { // Check if getIdleState() is valid
+             stateMachine->changeState(stateMachine->getIdleState());
+        } else {
+            Serial.println("Error: Cannot transition to IdleState either.");
+        }
     }
 }
 
@@ -64,7 +63,7 @@ void PaintingState::update() {
 }
 
 void PaintingState::exit() {
-    Serial.println("Exiting Painting State");
+    Serial.println("Exiting Painting State (All Sides)");
     // setMachineState(MachineState::UNKNOWN); // REMOVED
     // Stop paint gun, ensure motors are stopped, etc.
     paintGun_OFF(); 
