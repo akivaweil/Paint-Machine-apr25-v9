@@ -39,6 +39,7 @@ void setup() {
   stateMachine = new StateMachine();
 
   initializeSystem();
+  setupWebDashboardCommands(); // Initialize pins and settings for web commands
   
   // Initialize servo after settings are loaded
   int initialServoAngle = paintingSettings.getServoAngleSide1(); // Get initial angle from loaded settings

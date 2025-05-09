@@ -842,26 +842,35 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
         // Send commands to the ESP32
         function sendCommand(command) {
             if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-                console.error("WebSocket is not connected!");
-                updateConnectionStatus('disconnected');
+                const wsState = websocket ? websocket.readyState : 'null';
+                console.error(`WebSocket not connected. Command '${command}' failed. WebSocket state: ${wsState}, Connection attempts: ${connectionAttempts}`);
                 
-                // Try to reconnect immediately
-                if (!reconnectInterval) {
-                    initWebSocket();
+                // Check if we are still within the allowed reconnection attempts
+                if (connectionAttempts <= 480) { // 480 is the current max attempts ceiling from scheduleReconnect
+                    updateConnectionStatus('error', 'Not Connected! Attempting to reconnect...');
+                    console.log("Calling initWebSocket() due to command attempt while disconnected.");
+                    initWebSocket(); // Attempt to re-establish connection
+                } else {
+                    updateConnectionStatus('error', 'Not Connected. Max retries reached. Please refresh.');
+                    console.warn("Max reconnection attempts reached. Command '" + command + "' not sent. User needs to refresh.");
                 }
                 
-                // Store the command to send after reconnection
+                // Existing queuing logic for specific commands
                 if (command === 'GET_PAINT_SETTINGS') {
                     window.needToLoadPatternSettings = true;
+                    console.log("GET_PAINT_SETTINGS command queued due to disconnection.");
                 } else if (command !== 'GET_STATUS') {  // Don't queue status requests
+                    // Attempt to resend the command after a short delay, hoping for reconnection
                     setTimeout(function() {
-                        if (isWebSocketConnected) {
-                            console.log(`Resending queued command: ${command}`);
+                        if (isWebSocketConnected && websocket && websocket.readyState === WebSocket.OPEN) {
+                            console.log(`Retrying command '${command}' after a short delay upon reconnection.`);
                             websocket.send(command);
+                        } else {
+                            console.log(`Still not connected after delay. Queued command '${command}' not resent.`);
                         }
-                    }, 1500);
+                    }, 2000); // Wait 2 seconds and check again
                 }
-                return false;
+                return false; // Indicate command was not sent
             }
             
             try {
@@ -869,8 +878,8 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 console.log(`Command sent: ${command}`);
                 return true;
             } catch (e) {
-                console.error(`Error sending command: ${e.message}`);
-                updateConnectionStatus('error', e.message);
+                console.error(`Error sending command '${command}': ${e.message}`);
+                updateConnectionStatus('error', `Send Error: ${e.message}`);
                 return false;
             }
         }
@@ -1141,8 +1150,8 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             <div class="pattern-tabs">
                 <button class="pattern-tab" id="side3TabBtn" onclick="openPatternTab('side3Tab')">Side 3 Settings</button>
                 <button class="pattern-tab" id="side1TabBtn" onclick="openPatternTab('side1Tab')">Side 1 Settings</button>
-                <button class="pattern-tab" id="side4TabBtn" onclick="openPatternTab('side4Tab')">Side 4 Settings</button>
                 <button class="pattern-tab" id="side2TabBtn" onclick="openPatternTab('side2Tab')">Side 2 Settings</button>
+                <button class="pattern-tab" id="side4TabBtn" onclick="openPatternTab('side4Tab')">Side 4 Settings</button>
             </div>
             
             <div class="main-divider"></div>
@@ -1225,46 +1234,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 </div>
             </div>
             
-            <!-- Side 4 Settings Tab Content -->
-            <div class="pattern-tab-content" id="side4Tab">
-                <div class="pattern-settings-grid">
-                    <div class="pattern-setting-group">
-                        <h3>Side 4 Starting Position</h3>
-                        <div class="setting-inputs labeled-inputs">
-                            <label for="side4StartX">X:</label>
-                            <input type="number" id="side4StartX" class="setting-input" min="0" max="37" placeholder="0.0" onchange="updatePatternSetting('SIDE4STARTX', this.value)">
-                            <label for="side4StartY">Y:</label>
-                            <input type="number" id="side4StartY" class="setting-input" min="0" max="37" placeholder="0.0" onchange="updatePatternSetting('SIDE4STARTY', this.value)">
-                        </div>
-                    </div>
-                    <div class="pattern-setting-group">
-                        <h3>Shift Distance</h3>
-                        <input type="number" id="side4ShiftX" class="setting-input" step="0.1" placeholder="0.0" onchange="updatePatternSetting('SIDE4SHIFTX', this.value)">
-                    </div>
-                    <div class="pattern-setting-group">
-                        <h3>Sweep Distance</h3>
-                        <input type="number" id="side4SweepY" class="setting-input" step="0.1" placeholder="0.0" onchange="updatePatternSetting('SIDE4SWEEPY', this.value)">
-                    </div>
-                    <div class="pattern-setting-group">
-                        <h3>Shift Speed</h3>
-                        <input type="number" id="side4PaintingXSpeed" class="setting-input" max="20000" step="1000" placeholder="20" onchange="updatePatternSetting('SIDE4PAINTINGXSPEED', this.value)">
-                    </div>
-                    <div class="pattern-setting-group">
-                        <h3>Sweep Speed</h3>
-                        <input type="number" id="side4PaintingYSpeed" class="setting-input" max="20000" step="1000" placeholder="20" onchange="updatePatternSetting('SIDE4PAINTINGYSPEED', this.value)">
-                    </div>
-                    <div class="pattern-setting-group">
-                        <h3>Z Height</h3>
-                        <input type="number" id="side4ZHeight" class="setting-input" min="-2.5" max="0" step="0.1" placeholder="0.0" onchange="updatePatternSetting('SIDE4ZHEIGHT', this.value)">
-                    </div>
-                    <div class="pattern-setting-group">
-                        <h3>Servo Angle</h3>
-                        <input type="number" id="servoAngleSide4" class="setting-input" min="30" max="100" step="1" placeholder="0" onchange="updatePatternSetting('SERVO_ANGLE_SIDE4', this.value)">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Side 2 Settings Tab Content -->
+            <!-- Side 2 Settings Tab Content (Was Originally Side 4) -->
             <div class="pattern-tab-content" id="side2Tab">
                 <div class="pattern-settings-grid">
                     <div class="pattern-setting-group">
@@ -1299,6 +1269,45 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                     <div class="pattern-setting-group">
                         <h3>Servo Angle</h3>
                         <input type="number" id="servoAngleSide2" class="setting-input" min="30" max="100" step="1" placeholder="0" onchange="updatePatternSetting('SERVO_ANGLE_SIDE2', this.value)">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Side 4 Settings Tab Content (Was Originally Side 2) -->
+            <div class="pattern-tab-content" id="side4Tab">
+                <div class="pattern-settings-grid">
+                    <div class="pattern-setting-group">
+                        <h3>Side 4 Starting Position</h3>
+                        <div class="setting-inputs labeled-inputs">
+                            <label for="side4StartX">X:</label>
+                            <input type="number" id="side4StartX" class="setting-input" min="0" max="37" placeholder="0.0" onchange="updatePatternSetting('SIDE4STARTX', this.value)">
+                            <label for="side4StartY">Y:</label>
+                            <input type="number" id="side4StartY" class="setting-input" min="0" max="37" placeholder="0.0" onchange="updatePatternSetting('SIDE4STARTY', this.value)">
+                        </div>
+                    </div>
+                    <div class="pattern-setting-group">
+                        <h3>Shift Distance</h3>
+                        <input type="number" id="side4ShiftX" class="setting-input" step="0.1" placeholder="0.0" onchange="updatePatternSetting('SIDE4SHIFTX', this.value)">
+                    </div>
+                    <div class="pattern-setting-group">
+                        <h3>Sweep Distance</h3>
+                        <input type="number" id="side4SweepY" class="setting-input" step="0.1" placeholder="0.0" onchange="updatePatternSetting('SIDE4SWEEPY', this.value)">
+                    </div>
+                    <div class="pattern-setting-group">
+                        <h3>Shift Speed</h3>
+                        <input type="number" id="side4PaintingXSpeed" class="setting-input" max="20000" step="1000" placeholder="20" onchange="updatePatternSetting('SIDE4PAINTINGXSPEED', this.value)">
+                    </div>
+                    <div class="pattern-setting-group">
+                        <h3>Sweep Speed</h3>
+                        <input type="number" id="side4PaintingYSpeed" class="setting-input" max="20000" step="1000" placeholder="20" onchange="updatePatternSetting('SIDE4PAINTINGYSPEED', this.value)">
+                    </div>
+                    <div class="pattern-setting-group">
+                        <h3>Z Height</h3>
+                        <input type="number" id="side4ZHeight" class="setting-input" min="-2.5" max="0" step="0.1" placeholder="0.0" onchange="updatePatternSetting('SIDE4ZHEIGHT', this.value)">
+                    </div>
+                    <div class="pattern-setting-group">
+                        <h3>Servo Angle</h3>
+                        <input type="number" id="servoAngleSide4" class="setting-input" min="30" max="100" step="1" placeholder="0" onchange="updatePatternSetting('SERVO_ANGLE_SIDE4', this.value)">
                     </div>
                 </div>
             </div>

@@ -29,7 +29,7 @@ const unsigned int CLEANING_X_SPEED = 15000;
 const unsigned int CLEANING_Y_SPEED = 15000;
 const unsigned int CLEANING_Z_SPEED = 4000;
 
-const unsigned long ALL_SIDES_REPEAT_DELAY_MS = 0.3 * 60 * 1000; // 3 minutes in milliseconds
+const unsigned long ALL_SIDES_REPEAT_DELAY_MS = 1.0 * 60 * 1000; // 3 minutes in milliseconds
 
 // Helper function for a single painting sequence
 // Returns true if completed, false if aborted by home command

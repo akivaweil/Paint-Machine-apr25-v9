@@ -27,4 +27,7 @@ void processWebSocketEvents();
 // Check if a home command was received during painting operations
 bool checkForHomeCommand();
 
+// Function to initialize settings and pins related to web commands
+void setupWebDashboardCommands();
+
 #endif // WEB_DASHBOARD_COMMANDS_H 

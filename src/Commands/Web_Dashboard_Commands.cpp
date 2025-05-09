@@ -243,15 +243,27 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     }
     else if (baseCommand == "PAINT_GUN_ON") {
         // Turn on paint gun
-        extern void paintGun_ON();
         paintGun_ON();
         webSocket->sendTXT(num, "CMD_ACK: Paint Gun ON");
     }
     else if (baseCommand == "PAINT_GUN_OFF") {
         // Turn off paint gun
-        extern void paintGun_OFF();
         paintGun_OFF();
         webSocket->sendTXT(num, "CMD_ACK: Paint Gun OFF");
+    }
+    else if (baseCommand == "PRESSURE_POT_ON") {
+        Serial.println("Turning Pressure Pot ON via web command");
+        digitalWrite(PRESSURE_POT_PIN, HIGH);
+        // It's good practice to also update an internal state variable if you have one for pressure pot
+        webSocket->sendTXT(num, "PRESSURE_POT_STATUS:ON"); // Send status back to UI
+        Serial.printf("Pressure Pot Pin %d set to HIGH\n", PRESSURE_POT_PIN);
+    }
+    else if (baseCommand == "PRESSURE_POT_OFF") {
+        Serial.println("Turning Pressure Pot OFF via web command");
+        digitalWrite(PRESSURE_POT_PIN, LOW);
+        // Update internal state variable if applicable
+        webSocket->sendTXT(num, "PRESSURE_POT_STATUS:OFF"); // Send status back to UI
+        Serial.printf("Pressure Pot Pin %d set to LOW\n", PRESSURE_POT_PIN);
     }
     else if (baseCommand == "PAINT_SIDE_1") {
         Serial.println("Painting side 1...");
@@ -1265,3 +1277,10 @@ void setupWebDashboard() {
     Serial.println("WebSocket server started on port 81");
 }
 */ 
+
+void setupWebDashboardCommands() {
+    Serial.println("Setting up Web Dashboard Commands...");
+    pinMode(PRESSURE_POT_PIN, OUTPUT);
+    digitalWrite(PRESSURE_POT_PIN, LOW); // Ensure pressure pot is off initially
+    Serial.printf("Pressure Pot Pin %d initialized as OUTPUT and set to LOW.\n", PRESSURE_POT_PIN);
+}
