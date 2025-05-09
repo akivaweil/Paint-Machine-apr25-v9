@@ -26,7 +26,8 @@ extern WebSocketsServer webSocket;
 bool inStateTransition = false;
 
 StateMachine::StateMachine() : 
-    currentState(nullptr)
+    currentState(nullptr),
+    nextStateOverride(nullptr) // Initialize nextStateOverride
     // Initialize state instances here if using composition
     // homingState(), // Example - PnP was likely here
     // paintingSide1State(), 
@@ -115,6 +116,26 @@ void StateMachine::update() {
         currentState->update();
     }
 }
+
+// --- nextStateOverride Methods ---
+void StateMachine::setNextStateOverride(State* state) {
+    nextStateOverride = state;
+    if (state) {
+        Serial.printf("StateMachine: Next state override set to: %s\n", state->getName());
+    } else {
+        Serial.println("StateMachine: Next state override cleared.");
+    }
+}
+
+State* StateMachine::getNextStateOverrideAndClear() {
+    State* temp = nextStateOverride;
+    if (temp) {
+        Serial.printf("StateMachine: Consuming next state override: %s\n", temp->getName());
+    }
+    nextStateOverride = nullptr;
+    return temp;
+}
+// --------------------------------
 
 // Helper function to get state name (now uses the virtual method)
 const char* StateMachine::getStateName(State* state) {

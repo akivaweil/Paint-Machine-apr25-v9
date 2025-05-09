@@ -28,45 +28,81 @@ extern FastAccelStepper* stepperZ;
 //* ************************* PAINTING STATE ***************************
 //* ************************************************************************
 
-PaintingState::PaintingState() {
+PaintingState::PaintingState() : currentStep(PS_IDLE) {
     // Constructor implementation
 }
 
 void PaintingState::enter() {
-    Serial.println("Entering Painting State (All Sides)");
-    // setMachineState(MachineState::PAINTING); // REMOVED
+    Serial.print("PaintingState: enter() called. CurrentStep BEFORE logic: ");
+    Serial.println(currentStep); // Log its value *before* the if. Add specific name if possible later.
     
-    paintAllSides(); // Call the function to paint all sides
-
-    // After painting is complete, move to 0,0,0 then transition to HomingState
-    Serial.println("All Sides Painting complete. Moving to 0,0,0 before transitioning to Homing State...");
-    moveToXYZ(0, DEFAULT_X_SPEED, 0, DEFAULT_Y_SPEED, 0, DEFAULT_Z_SPEED); 
-    
-    if (stateMachine) {
-        stateMachine->changeState(stateMachine->getHomingState());
+    if (currentStep == PS_IDLE) {
+        Serial.println("PaintingState: enter() - Condition (currentStep == PS_IDLE) is TRUE. Setting to PS_REQUEST_PRE_PAINT_CLEAN.");
+        currentStep = PS_REQUEST_PRE_PAINT_CLEAN; // Start the sequence
     } else {
-        Serial.println("Error: StateMachine pointer is null in PaintingState::enter(). Cannot transition to Homing.");
-        // Attempt to go to Idle as a fallback if HomingState transition fails,
-        // though this part might not be reached if stateMachine is null.
-        if (stateMachine && stateMachine->getIdleState()) { // Check if getIdleState() is valid
-             stateMachine->changeState(stateMachine->getIdleState());
-        } else {
-            Serial.println("Error: Cannot transition to IdleState either.");
-        }
+        Serial.print("PaintingState: enter() - Condition (currentStep == PS_IDLE) is FALSE. Preserving currentStep: ");
+        Serial.println(currentStep); // Log its value if preserved.
     }
+    Serial.print("PaintingState: enter() finished. CurrentStep AFTER logic: ");
+    Serial.println(currentStep);
+    // Update will handle the rest based on currentStep
 }
 
 void PaintingState::update() {
-    // Code to run repeatedly during the painting state
-    // This state now completes its work in enter(), so update might be empty
-    // Or it could monitor for abort commands if needed in the future.
+    switch (currentStep) {
+        case PS_REQUEST_PRE_PAINT_CLEAN:
+            Serial.println("PaintingState: Requesting short pre-paint clean.");
+            if (stateMachine && stateMachine->getCleaningState()) {
+                static_cast<CleaningState*>(stateMachine->getCleaningState())->setShortMode(true);
+                stateMachine->setNextStateOverride(this); // Return to PaintingState
+                currentStep = PS_PERFORM_ALL_SIDES_PAINTING; // Set next step for when we return
+                stateMachine->changeState(stateMachine->getCleaningState());
+                // PaintingState is no longer active until CleaningState returns.
+            } else {
+                Serial.println("ERROR: PaintingState - Cannot initiate cleaning, SM or CleaningState not available.");
+                currentStep = PS_REQUEST_HOMING; // Skip to homing on error
+            }
+            break;
+
+        case PS_PERFORM_ALL_SIDES_PAINTING:
+            Serial.println("PaintingState: Pre-paint clean complete. Starting all sides painting routine.");
+            paintAllSides(); // This is assumed to be a blocking call
+            Serial.println("PaintingState: All Sides Painting routine finished.");
+            currentStep = PS_MOVE_TO_ZERO_BEFORE_HOMING;
+            // Fall-through because paintAllSides() is blocking.
+            // If it became non-blocking, we'd break here and wait for its completion signal.
+
+        case PS_MOVE_TO_ZERO_BEFORE_HOMING:
+            Serial.println("PaintingState: Moving to 0,0,0 before Homing.");
+            moveToXYZ(0, DEFAULT_X_SPEED, 0, DEFAULT_Y_SPEED, 0, DEFAULT_Z_SPEED); // Blocking
+            currentStep = PS_REQUEST_HOMING;
+            // Fall-through
+        
+        case PS_REQUEST_HOMING:
+            Serial.println("PaintingState: Sequence complete. Requesting Homing State.");
+            if (stateMachine && stateMachine->getHomingState()) {
+                stateMachine->changeState(stateMachine->getHomingState());
+            } else {
+                Serial.println("ERROR: PaintingState - Cannot transition to HomingState.");
+                if (stateMachine && stateMachine->getIdleState()) {
+                   stateMachine->changeState(stateMachine->getIdleState());
+                }
+            }
+            currentStep = PS_IDLE; // Reset for next entry into PaintingState
+            break;
+        
+        case PS_IDLE:
+            // Waiting for a new painting command (which would call enter() and reset currentStep)
+            break;
+    }
 }
 
 void PaintingState::exit() {
     Serial.println("Exiting Painting State (All Sides)");
     // setMachineState(MachineState::UNKNOWN); // REMOVED
-    // Stop paint gun, ensure motors are stopped, etc.
     paintGun_OFF(); 
+    // currentStep = PS_IDLE; // REMOVED: Reset step on exit - This was causing the loop.
+                            // currentStep is now reset at the end of the painting sequence within update().
 }
 
 const char* PaintingState::getName() const {

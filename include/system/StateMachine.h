@@ -28,6 +28,10 @@ public:
     State* getPnpState() { return pnpState; }
     State* getManualMoveState() { return manualMoveState; }
     
+    // Mechanism to allow a state to define the next state after a sub-routine
+    void setNextStateOverride(State* state);
+    State* getNextStateOverrideAndClear();
+
     // Helper method to get state name for debugging
     const char* getStateName(State* state);
 
@@ -40,6 +44,7 @@ private:
     State* pausedState;
     State* pnpState;
     State* manualMoveState;
+    State* nextStateOverride; // Added for sub-routine returns
 };
 
 #endif // STATEMACHINE_H 

@@ -11,9 +11,12 @@ public:
     void exit() override;
     const char* getName() const override;
 
+    void setShortMode(bool mode);
+
 private:
     bool _isCleaning;
     bool _cleaningComplete;
+    bool shortMode; // Added for short cleaning cycle
 };
 
 #endif // CLEANING_STATE_H 

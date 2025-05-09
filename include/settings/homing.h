@@ -19,7 +19,7 @@
 #define HOMING_MOVE_AWAY_ACCEL_Z 1250  // Z Homing move-away acceleration
 
 // --- Homing Misc ---
-#define HOMING_MOVE_AWAY_INCHES 0.5f             // Distance to move away from home switch (inches)
+#define HOMING_MOVE_AWAY_INCHES 0.2f             // Distance to move away from home switch (inches)
 #define HOMING_TIMEOUT_MS 15000                  // Homing timeout (ms)
 
 #endif // SETTINGS_HOMING_H 

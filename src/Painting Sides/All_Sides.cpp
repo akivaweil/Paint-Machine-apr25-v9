@@ -54,6 +54,8 @@ bool _executeSinglePaintAllSidesSequence(const char* runLabel) {
         Serial.println(")");
     }
     
+    // --- START: Comment out redundant cleaning burst in All_Sides ---
+    /*
     //! Move to cleaning position and perform short burst
     Serial.print("Moving to cleaning position... (");
     Serial.print(runLabel);
@@ -82,10 +84,14 @@ bool _executeSinglePaintAllSidesSequence(const char* runLabel) {
     Serial.println(")");
     // Use current X/Y positions from after the cleaning move
     moveToXYZ(stepperX->getCurrentPosition(), CLEANING_X_SPEED, stepperY_Left->getCurrentPosition(), CLEANING_Y_SPEED, 0, CLEANING_Z_SPEED);
-    Serial.print("Z axis at 0. Starting painting. (");
+    */
+    // --- END: Comment out redundant cleaning burst in All_Sides ---
+    // The PaintingState now handles a dedicated pre-paint clean using CleaningState.
+
+    Serial.print("Z axis at 0 (assumed or handled by pre-clean). Starting painting. (");
     Serial.print(runLabel);
     Serial.println(")");
-    // Note: Servo remains at cleaning angle, assuming painting functions will set their required angles.
+    // Note: Servo angle should be set by individual side patterns as needed.
     
     //! STEP 1: Paint right side
     Serial.print("Starting Right Side ("); Serial.print(runLabel); Serial.println(")");
@@ -148,7 +154,7 @@ void paintAllSides() {
     
     Serial.println("Homing successful. Starting X-axis loading bar movement over an expected duration of " + String(ALL_SIDES_REPEAT_DELAY_MS / 1000) + "s.");
 
-    const float LOADING_BAR_X_INCHES = 30.0f;
+    const float LOADING_BAR_X_INCHES = 26.0f;
     long target_x_loading_bar_steps = (long)(LOADING_BAR_X_INCHES * STEPS_PER_INCH_XYZ); // X is at 0 after homing
     float duration_seconds = ALL_SIDES_REPEAT_DELAY_MS / 1000.0f;
 

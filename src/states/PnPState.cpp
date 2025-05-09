@@ -61,17 +61,39 @@ void PnPState::enter() {
     Serial.printf("Pick Location Steps: X=%ld, Y=%ld\n", pickLocationX_steps, pickLocationY_steps);
 
     // Reset state variables
-    currentPnPGridPosition = 0;
+    // currentPnPGridPosition = 0; // Original starting position
     pnpCycleIsComplete = false;
     lastCycleTime = millis();  // Set initial cycle time
     pnp_step = 0; // Start with initial move to pick location
+
+    // --- TEMPORARY MODIFICATION: Only process bottom two rows ---
+    int startRow = GRID_ROWS - 2;
+    if (startRow < 0) { // Ensure startRow is not negative if GRID_ROWS < 2
+        startRow = 0;
+    }
+    currentPnPGridPosition = startRow * GRID_COLS;
+    int totalOriginalPositions = GRID_ROWS * GRID_COLS;
+    int endPositionForThisRun = totalOriginalPositions -1; 
+
+    Serial.println("!!! TEMPORARY PnP MODE ACTIVE !!!");
+    if (GRID_ROWS < 2 && GRID_ROWS > 0) {
+        Serial.printf("NOTE: Processing only the single available row (Row 0), positions %d to %d.\n", currentPnPGridPosition, endPositionForThisRun);
+    } else if (GRID_ROWS <= 0) {
+        Serial.println("NOTE: No rows to process in PnP.");
+         pnpCycleIsComplete = true; // No positions to process
+    } else {
+        Serial.printf("NOTE: Temporarily processing only bottom two rows (starting at Row %d, positions %d to %d of %d total original positions).\n", startRow, currentPnPGridPosition, endPositionForThisRun, totalOriginalPositions);
+    }
+    Serial.println("Original full grid processing is effectively commented out by starting later.");
+    // --- END TEMPORARY MODIFICATION ---
+
 
     // --- Initiate FIRST Move to Pick Location (Non-Blocking) ---
     Serial.println("Initiating initial move to pick location...");
     moveToPickLocation(true); // Mark as initial move, starts non-blocking move
 
     Serial.println("PnP State Setup Complete. Initial move started.");
-    Serial.println("NOTE: Starting at position 0 (top-right at grid origin) and working towards bottom-left (position 19).");
+    // Original Note: Serial.println("NOTE: Starting at position 0 (top-right at grid origin) and working towards bottom-left (position 19).");
 }
 
 void PnPState::update() {

@@ -36,84 +36,84 @@ void paintSide4Pattern() {
     //! STEP 0: Turn on pressure pot
     PressurePot_ON();
 
-    //! STEP 1: Move to side 4 painting Z height
-    long zPos = (long)(paintingSettings.getSide4ZHeight() * STEPS_PER_INCH_XYZ);
-    long sideZPos = (long)(paintingSettings.getSide4SideZHeight() * STEPS_PER_INCH_XYZ);
+    //! STEP 1: Move to side 4 painting Z height (NOW USING SIDE 2 PARAMS)
+    long zPos = (long)(paintingSettings.getSide2ZHeight() * STEPS_PER_INCH_XYZ); // Was getSide4ZHeight
+    long sideZPos = (long)(paintingSettings.getSide2SideZHeight() * STEPS_PER_INCH_XYZ); // Was getSide4SideZHeight
 
     moveToXYZ(stepperX->getCurrentPosition(), DEFAULT_X_SPEED,
               stepperY_Left->getCurrentPosition(), DEFAULT_Y_SPEED,
               sideZPos, DEFAULT_Z_SPEED);
 
-    //! STEP 2: Rotate to the side 4 position
-    rotateToAngle(SIDE4_ROTATION_ANGLE);
-    Serial.println("Rotated to side 4 position");
+    //! STEP 2: Rotate to the (former) side 2 position
+    rotateToAngle(SIDE2_ROTATION_ANGLE); // Was SIDE4_ROTATION_ANGLE
+    Serial.println("Rotated to (former) side 2 position [now Side 4's target]");
 
-    //! STEP 3: Move to start position (P1)
-    long startX = (long)(paintingSettings.getSide4StartX() * STEPS_PER_INCH_XYZ);
-    long startY = (long)(paintingSettings.getSide4StartY() * STEPS_PER_INCH_XYZ);
+    //! STEP 3: Move to start position (P1 of former Side 2)
+    long startX = (long)(paintingSettings.getSide2StartX() * STEPS_PER_INCH_XYZ); // Was getSide4StartX
+    long startY = (long)(paintingSettings.getSide2StartY() * STEPS_PER_INCH_XYZ); // Was getSide4StartY
     moveToXYZ(startX, DEFAULT_X_SPEED, startY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-    Serial.println("Moved to side 4 pattern start position (P1)");
+    Serial.println("Moved to (former) side 2 pattern start position (P1) [now Side 4's start]");
 
     //! STEP 4: Lower to painting Z height
     moveToXYZ(startX, DEFAULT_X_SPEED, startY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
 
-    //! STEP 5: Execute side 4 painting pattern (TEST MODE)
+    // -- START OF FORMER SIDE 2 PATTERN (ADAPTED FOR SIDE 4 SETTINGS) --
+    //! STEP 5: Execute painting pattern (formerly Side 2's TEST MODE logic)
     long currentX = startX; // Will be updated by calculation
     long currentY = startY; // Will be updated by calculation
-    long sweepYDistance = (long)(paintingSettings.getSide4SweepY() * STEPS_PER_INCH_XYZ);
-    long shiftXDistance = (long)(paintingSettings.getSide4ShiftX() * STEPS_PER_INCH_XYZ);
+    long sweepYDistance = (long)(paintingSettings.getSide4SweepY() * STEPS_PER_INCH_XYZ); // USE SIDE 4 SETTINGS
+    long shiftXDistance = (long)(paintingSettings.getSide4ShiftX() * STEPS_PER_INCH_XYZ); // USE SIDE 4 SETTINGS
 
-    Serial.println("Side 4 Pattern: TEST MODE - Executing 4th and 5th Y-sweeps and interconnecting X-shift.");
+    //! (Formerly Side 2's) TEST MODIFICATION: Calculate starting point for its last two sweeps (P6 equivalent for original Side 2)
+    Serial.println("Side 4 Pattern (formerly Side 2 Logic): TEST MODE - Calculating start for its specific sequence (P6 Side 2 equiv.)");
+    // Original Side 2 logic: currentX = startX - (2 * shiftXDistance); currentY = startY - sweepYDistance;
+    // This implies Side 2's P6 is to the left and down from its P1.
+    // We apply this arithmetic using Side 4's startX, startY, shiftXDistance, and sweepYDistance.
+    currentX = startX - (2 * shiftXDistance); // Uses Side 4's shiftXDistance
+    currentY = startY - sweepYDistance;      // Uses Side 4's sweepYDistance
+    moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
+    Serial.println("Side 4 Pattern (formerly Side 2 Logic): TEST MODE - Moved to its specific sequence start point.");
 
-    //! Calculate starting point for the 4th sweep (P7 equivalent)
-    // P1: (startX, startY)
-    // P2: (startX, startY + sweepY)
-    // P3: (startX + shiftX, startY + sweepY)
-    // P4: (startX + shiftX, startY)
-    // P5: (startX + 2*shiftX, startY)
-    // P6: (startX + 2*shiftX, startY + sweepY)
-    // P7: (startX + 3*shiftX, startY + sweepY)
-    currentX = startX + (3 * shiftXDistance);
-    currentY = startY + sweepYDistance;
-    moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED); // Move to calculated P7 at painting Z
-    Serial.println("Side 4 Pattern: TEST MODE - Moved to calculated start position for 4th sweep (P7 equivalent).");
+    /* // Original Side 2's commented out first three sweeps and two shifts are NOT brought over explicitly,
+       // as the request is to swap the *active* painting pattern code. The active Side 2 code starts after this comment.
+    */
 
-    // Fourth sweep: Y- direction (P7 to P8) - This is the 1st active sweep in test
-    // currentX is startX + 3*shiftXDistance
-    // currentY is startY + sweepYDistance
-    Serial.println("Side 4 Pattern: Fourth sweep Y- (Active - 1st of 2 sweeps)");
+    // (Formerly Side 2's) Third shift: X- direction (P6 to P7 for original Side 2)
+    Serial.println("Side 4 Pattern (formerly Side 2 Logic): First active shift X-");
+    currentX -= shiftXDistance; // Uses Side 4's shiftXDistance
+    moveToXYZ(currentX, paintingSettings.getSide4PaintingXSpeed(), currentY, paintingSettings.getSide4PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // USE SIDE 4 SPEEDS
+
+    // (Formerly Side 2's) Fourth sweep: Y+ direction (P7 to P8 for original Side 2)
+    Serial.println("Side 4 Pattern (formerly Side 2 Logic): First active sweep Y+");
     paintGun_ON();
-    currentY -= sweepYDistance; // Target Y: startY
-    moveToXYZ(currentX, paintingSettings.getSide4PaintingXSpeed(), currentY, paintingSettings.getSide4PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
+    currentY += sweepYDistance; // Uses Side 4's sweepYDistance
+    moveToXYZ(currentX, paintingSettings.getSide4PaintingXSpeed(), currentY, paintingSettings.getSide4PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // USE SIDE 4 SPEEDS
     paintGun_OFF();
 
     if (checkForHomeCommand()) {
         moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-        Serial.println("Side 4 Pattern Painting ABORTED due to home command (after 4th sweep)");
+        Serial.println("Side 4 Pattern Painting (formerly Side 2 Logic) ABORTED due to home command");
         return;
     }
 
-    // Fourth shift: X+ direction (P8 to P9) - This is the 1st active shift in test
-    // currentX is startX + 3*shiftXDistance
-    // currentY is startY
-    Serial.println("Side 4 Pattern: Shift X+ (Active - Interconnecting shift)");
-    currentX += shiftXDistance; // Target X: startX + 4*shiftXDistance
-    moveToXYZ(currentX, paintingSettings.getSide4PaintingXSpeed(), currentY, paintingSettings.getSide4PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
+    // (Formerly Side 2's) Fourth shift: X- direction (P8 to P9 for original Side 2)
+    Serial.println("Side 4 Pattern (formerly Side 2 Logic): Second active shift X-");
+    currentX -= shiftXDistance; // Uses Side 4's shiftXDistance
+    moveToXYZ(currentX, paintingSettings.getSide4PaintingXSpeed(), currentY, paintingSettings.getSide4PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // USE SIDE 4 SPEEDS
 
-    // Fifth sweep: Y+ direction (P9 to P10) - This is the 2nd active sweep in test
-    // currentX is startX + 4*shiftXDistance
-    // currentY is startY
-    Serial.println("Side 4 Pattern: Fifth sweep Y+ (Active - 2nd of 2 sweeps)");
+    // (Formerly Side 2's) Fifth sweep: Y- direction (P9 to P10 for original Side 2)
+    Serial.println("Side 4 Pattern (formerly Side 2 Logic): Second active sweep Y-");
     paintGun_ON();
-    currentY += sweepYDistance; // Target Y: startY + sweepYDistance
-    moveToXYZ(currentX, paintingSettings.getSide4PaintingXSpeed(), currentY, paintingSettings.getSide4PaintingYSpeed(), zPos, DEFAULT_Z_SPEED);
+    currentY -= sweepYDistance; // Uses Side 4's sweepYDistance
+    moveToXYZ(currentX, paintingSettings.getSide4PaintingXSpeed(), currentY, paintingSettings.getSide4PaintingYSpeed(), zPos, DEFAULT_Z_SPEED); // USE SIDE 4 SPEEDS
     paintGun_OFF();
 
     if (checkForHomeCommand()) {
         moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
-        Serial.println("Side 4 Pattern Painting ABORTED due to home command (after 5th sweep)");
+        Serial.println("Side 4 Pattern Painting (formerly Side 2 Logic) ABORTED due to home command");
         return;
     }
+    // -- END OF FORMER SIDE 2 PATTERN --
 
     //! STEP 8: Raise to safe Z height
     moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);

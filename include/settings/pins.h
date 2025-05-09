@@ -32,12 +32,12 @@
 
 // --- Servo & Actuator Pins ---
 // Pitch Servo Removed
-#define PICK_CYLINDER_PIN 10
-#define SUCTION_PIN 11
-#define PAINT_GUN_PIN 12
+#define PICK_CYLINDER_PIN 12
+#define SUCTION_PIN 10
+#define PAINT_GUN_PIN 11
 #define PRESSURE_POT_PIN 13
 
 // --- Control Input Pins ---
-#define PNP_CYCLE_SWITCH_PIN 17
+#define PNP_CYCLE_SWITCH_PIN 8
 
 #endif // SETTINGS_PINS_H 

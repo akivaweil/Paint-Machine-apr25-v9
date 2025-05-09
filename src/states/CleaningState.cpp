@@ -33,15 +33,30 @@ const unsigned int CLEANING_X_SPEED = 15000; // Customize these values as needed
 const unsigned int CLEANING_Y_SPEED = 15000;
 const unsigned int CLEANING_Z_SPEED = 4000;
 
+// Durations for cleaning steps (milliseconds)
+const unsigned long NORMAL_PRESSURE_POT_INIT_DELAY = 500;
+const unsigned long SHORT_PRESSURE_POT_INIT_DELAY = 250;
+const unsigned long NORMAL_PAINT_GUN_ON_DELAY = 1000;
+const unsigned long SHORT_PAINT_GUN_ON_DELAY = 500;
+
 CleaningState::CleaningState() : 
     _isCleaning(false),
-    _cleaningComplete(false)
+    _cleaningComplete(false),
+    shortMode(false) // Initialize shortMode to false
 {
     // Constructor implementation
 }
 
+void CleaningState::setShortMode(bool mode) {
+    shortMode = mode;
+    Serial.print("CleaningState: Set to ");
+    Serial.println(shortMode ? "SHORT mode" : "NORMAL mode");
+}
+
 void CleaningState::enter() {
-    Serial.println("Entering Cleaning State");
+    Serial.print("Entering Cleaning State (");
+    Serial.print(shortMode ? "SHORT" : "NORMAL");
+    Serial.println(" mode)");
     
     //! Set Servo to cleaning angle
     myServo.setAngle(35);
@@ -59,20 +74,23 @@ void CleaningState::update() {
     if (_isCleaning && !_cleaningComplete) {
         Serial.println("Executing Cleaning Cycle...");
         
+        unsigned long pressurePotInitDelay = shortMode ? SHORT_PRESSURE_POT_INIT_DELAY : NORMAL_PRESSURE_POT_INIT_DELAY;
+        unsigned long paintGunOnDelay = shortMode ? SHORT_PAINT_GUN_ON_DELAY : NORMAL_PAINT_GUN_ON_DELAY;
+
         //! Step 1: Turn on pressure pot and initialize
         PressurePot_ON();
-        delay(500); 
+        delay(pressurePotInitDelay); 
 
         //! Step 3: Move to clean station
-        long cleaningX = 0.0 * STEPS_PER_INCH_XYZ;
-        long cleaningY = 2.0 * STEPS_PER_INCH_XYZ;
-        long cleaningZ = -2.5 * STEPS_PER_INCH_XYZ;
+        long cleaningX = 0.8 * STEPS_PER_INCH_XYZ;
+        long cleaningY = 4.1* STEPS_PER_INCH_XYZ;
+        long cleaningZ = -3.0 * STEPS_PER_INCH_XYZ;
         moveToXYZ(cleaningX, CLEANING_X_SPEED, cleaningY, CLEANING_Y_SPEED, cleaningZ, CLEANING_Z_SPEED);
         
-        //! Step 4: Activate paint gun for 1 second
+        //! Step 4: Activate paint gun for specified duration
         Serial.println("Activating paint gun...");
         paintGun_ON();
-        delay(1000);
+        delay(paintGunOnDelay);
         paintGun_OFF();
         
         //! Step 5: Return to home position
@@ -90,18 +108,28 @@ void CleaningState::update() {
         _isCleaning = false;
     }
     
-    // If cleaning is marked as complete, transition back to Idle
+    // If cleaning is marked as complete, transition
     if (_cleaningComplete) {
-        if (stateMachine) {
-            Serial.println("Cleaning complete. Transitioning back to Idle State.");
-            stateMachine->changeState(stateMachine->getIdleState());
-             // Reset flag for next entry after transition
-            _cleaningComplete = false; 
-        } else {
-            Serial.println("ERROR: StateMachine pointer null in CleaningState! Cannot transition.");
-            // Prevent potential infinite loop if stateMachine is null
-            _cleaningComplete = false; 
+        State* overrideState = nullptr;
+        if (stateMachine) { // Check stateMachine first
+            overrideState = stateMachine->getNextStateOverrideAndClear();
         }
+
+        if (overrideState) {
+            Serial.println("CleaningState: Short clean complete. Transitioning to override state.");
+            // shortMode = false; // Reset mode before leaving - already in exit()
+            if(stateMachine) stateMachine->changeState(overrideState);
+        } else {
+            Serial.println("CleaningState: Normal clean complete. Transitioning to Idle State.");
+            // shortMode = false; // Reset mode before leaving - already in exit()
+            if (stateMachine) {
+                 stateMachine->changeState(stateMachine->getIdleState());
+            } else {
+                Serial.println("ERROR: StateMachine pointer null. Cannot transition to Idle.");
+            }
+        }
+        _cleaningComplete = false; // Reset for next entry
+        // shortMode = false; // Moved to exit() for robustness
     }
 }
 
@@ -111,6 +139,7 @@ void CleaningState::exit() {
     PressurePot_OFF(); 
     _isCleaning = false; // Ensure flags are reset
     _cleaningComplete = false;
+    shortMode = false; // Ensure mode is reset on any exit
 }
 
 const char* CleaningState::getName() const {

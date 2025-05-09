@@ -15,12 +15,12 @@
 // --- Grid Layout ---
 #define GRID_COLS 4                            // Grid columns
 #define GRID_ROWS 5                            // Grid rows
-#define GRID_ORIGIN_X 26.6f                    // Grid origin X position (top-right corner)
-#define GRID_ORIGIN_Y 31.3f                    // Grid origin Y position (top-right corner)
+#define GRID_ORIGIN_X 18.5f                    // Grid origin X position (top-right corner)
+#define GRID_ORIGIN_Y 32.25f                    // Grid origin Y position (top-right corner)
 
 // --- Pick Location (inches) ---
-#define PICK_LOCATION_X 17.2f                  // X coordinate for component pickup
-#define PICK_LOCATION_Y 2.4f                   // Y coordinate for component pickup
+#define PICK_LOCATION_X 12.5f                  // X coordinate for component pickup
+#define PICK_LOCATION_Y 2.0f                   // Y coordinate for component pickup
 
 // --- PNP Operation Delays (ms) ---
 #define PNP_CYLINDER_EXTEND_TIME 300          // Delay after extending cylinder

@@ -911,7 +911,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
         
         // Load all pattern settings from the ESP32
         function loadPatternSettings() {
-            console.log("Loading pattern settings");
+            console.log(" pattern settings");
             sendCommand('GET_PAINT_SETTINGS');
         }
         
