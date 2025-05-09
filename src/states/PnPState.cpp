@@ -71,7 +71,7 @@ void PnPState::enter() {
     moveToPickLocation(true); // Mark as initial move, starts non-blocking move
 
     Serial.println("PnP State Setup Complete. Initial move started.");
-    Serial.println("NOTE: Starting at position 0 (bottom left) and working up to position 19 (top right at grid origin).");
+    Serial.println("NOTE: Starting at position 0 (top-right at grid origin) and working towards bottom-left (position 19).");
 }
 
 void PnPState::update() {
@@ -229,10 +229,8 @@ void PnPState::calculateGridPositions() {
     for (int row = 0; row < GRID_ROWS; row++) {
         for (int col = 0; col < GRID_COLS; col++) {
             int index = row * GRID_COLS + col;
-            int rowFromTop = (GRID_ROWS - 1) - row; 
-            int colFromRight = (GRID_COLS - 1) - col; 
-            gridPositionsX[index] = GRID_ORIGIN_X - (colFromRight * X_SHIFT);
-            gridPositionsY[index] = GRID_ORIGIN_Y - (rowFromTop * Y_SHIFT);
+            gridPositionsX[index] = GRID_ORIGIN_X - (col * X_SHIFT);
+            gridPositionsY[index] = GRID_ORIGIN_Y - (row * Y_SHIFT);
         }
     }
     Serial.println("Grid positions calculated.");
