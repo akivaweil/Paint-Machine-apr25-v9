@@ -128,6 +128,7 @@ void initializeMotorsAndSwitches() {
     stepperX = engine.stepperConnectToPin(X_STEP_PIN);
     if (stepperX) {
         stepperX->setDirectionPin(X_DIR_PIN);
+        stepperX->setSpeedInHz(DEFAULT_X_SPEED);
         stepperX->setAcceleration(DEFAULT_X_ACCEL);
     }
 

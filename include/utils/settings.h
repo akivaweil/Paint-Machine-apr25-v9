@@ -12,13 +12,13 @@
 #include "settings/pnp.h"
 
 // Y Axis Left
-#define Y_LEFT_DIR_PIN 41
-#define Y_LEFT_HOME_SWITCH 16
+// #define Y_LEFT_DIR_PIN 41  // Removed
+// #define Y_LEFT_HOME_SWITCH 16 // Removed
 
 // Y Axis Right
-#define Y_RIGHT_STEP_PIN 1
-#define Y_RIGHT_DIR_PIN 2
-#define Y_RIGHT_HOME_SWITCH 18
+// #define Y_RIGHT_STEP_PIN 1 // Removed
+// #define Y_RIGHT_DIR_PIN 2 // Removed
+// #define Y_RIGHT_HOME_SWITCH 18 // Removed
 
 // Z Axis
 

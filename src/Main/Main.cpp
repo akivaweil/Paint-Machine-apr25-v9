@@ -19,7 +19,7 @@ extern bool webSocketServerStarted;
 // Global variables
 unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 50;
-const int servoPin = 21;
+const int servoPin = 4;
 
 ServoMotor myServo(servoPin);
 extern PaintingSettings paintingSettings;
