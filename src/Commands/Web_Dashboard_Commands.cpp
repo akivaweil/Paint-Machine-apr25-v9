@@ -1082,19 +1082,23 @@ String getParameter(String url, String param) {
 void handleDashboardClient() {
   dashboardClient = dashboardServer.available();
   if (dashboardClient) {
+    Serial.println("[HTTP] New client connected"); // Added for debugging
     String currentLine = "";
     String request = ""; // Initialize request string
-    
+    unsigned long clientConnectTime = millis(); // Record connection time
+    const unsigned long clientReadTimeout = 5000; // 5 seconds timeout for reading request
+
     while (dashboardClient.connected()) {
       if (dashboardClient.available()) {
         char c = dashboardClient.read();
-        
+        clientConnectTime = millis(); // Reset timeout counter on data received
+
         // Store the first line of the HTTP request
         if (c == '\n') {
           if (currentLine.length() == 0) {
             // End of HTTP headers, send response based on the request
             
-            // Parse the request line *here* 
+            // Parse the request line *here*
             int firstSpace = request.indexOf(' ');
             int secondSpace = request.indexOf(' ', firstSpace + 1);
             String requestPath = "";
@@ -1201,6 +1205,8 @@ void handleDashboardClient() {
             // If we got a newline, check if this is the request line
             if (currentLine.startsWith("GET ") || currentLine.startsWith("POST ")) { // Handle GET or POST
               request = currentLine; // Store the request line
+              Serial.print("[HTTP] Request Line: "); // Added for debugging
+              Serial.println(request);
             }
             currentLine = "";
           }
@@ -1208,10 +1214,22 @@ void handleDashboardClient() {
           currentLine += c;
         }
       } // if dashboardClient.available()
+      else { // No data available
+        if (millis() - clientConnectTime > clientReadTimeout) {
+          Serial.println("[HTTP] Client read timeout. Closing connection.");
+          dashboardClient.stop();
+          break; 
+        }
+      }
     } // while dashboardClient.connected()
     
-    // Close the connection 
-    dashboardClient.stop();
+    // Close the connection if not already closed by timeout
+    if (dashboardClient.connected()) { // Check if still connected
+        dashboardClient.stop();
+        Serial.println("[HTTP] Client connection closed normally."); // Added for debugging
+    } else {
+        Serial.println("[HTTP] Client connection was already closed (likely by timeout)."); // Added for debugging
+    }
   } // if dashboardClient
 }
 
