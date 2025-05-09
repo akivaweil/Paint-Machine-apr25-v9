@@ -300,12 +300,8 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command)
     else if (baseCommand == "PAINT_ALL_SIDES") {
         Serial.println("Transitioning to Painting State (All Sides) via web command...");
         // Assuming PaintingState handles the specific pattern internally or via parameters
-        if (stateMachine) {
-            // You might need a way to tell PaintingState *which* pattern to run.
-            // This could be done by setting a flag before changing state, 
-            // or by passing data to the state's enter() method if possible.
-            // For now, just transitioning:
-            stateMachine->changeState(stateMachine->getPaintingState()); 
+        if (stateMachine && stateMachine->getPaintingState()) {
+            stateMachine->changeState(stateMachine->getPaintingState());
             webSocket->sendTXT(num, "CMD_ACK: Painting (All Sides) initiated.");
         } else {
             webSocket->sendTXT(num, "CMD_ERROR: StateMachine not available.");

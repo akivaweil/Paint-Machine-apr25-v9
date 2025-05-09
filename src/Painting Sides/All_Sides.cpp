@@ -29,7 +29,7 @@ const unsigned int CLEANING_X_SPEED = 15000;
 const unsigned int CLEANING_Y_SPEED = 15000;
 const unsigned int CLEANING_Z_SPEED = 4000;
 
-const unsigned long ALL_SIDES_REPEAT_DELAY_MS = 1.0 * 60 * 1000; // 3 minutes in milliseconds
+const unsigned long ALL_SIDES_REPEAT_DELAY_MS = 30 * 1000; // 30 seconds in milliseconds
 
 // Helper function for a single painting sequence
 // Returns true if completed, false if aborted by home command
@@ -133,38 +133,37 @@ bool _executeSinglePaintAllSidesSequence(const char* runLabel) {
 
 // Main function to be called externally
 void paintAllSides() {
-    Serial.println("Initiating Two-Run All Sides Painting Process.");
+    Serial.println("Initiating Three-Run All Sides Painting Process.");
 
     // First run
     if (!_executeSinglePaintAllSidesSequence("Run 1")) {
-        Serial.println("First run aborted. Full two-run process terminated.");
+        Serial.println("First run aborted. Full three-run process terminated.");
         return; // Abort if the first run was cancelled
     }
 
     Serial.println("First run of All Sides Painting finished.");
-    Serial.println("Homing all axes before starting timer...");
+    Serial.println("Homing all axes before starting timer for second run...");
 
-    Homing homingController(engine, stepperX, stepperY_Left, stepperY_Right, stepperZ);
-    bool homingSuccess = homingController.homeAllAxes(); // This is a blocking call
+    Homing homingController1(engine, stepperX, stepperY_Left, stepperY_Right, stepperZ); // Renamed for clarity
+    bool homingSuccess1 = homingController1.homeAllAxes(); 
 
-    if (!homingSuccess) {
-        Serial.println("Homing after first run FAILED. Full two-run process terminated.");
-        return; // Abort if homing failed
+    if (!homingSuccess1) {
+        Serial.println("Homing after first run FAILED. Full three-run process terminated.");
+        return; 
     }
     
-    Serial.println("Homing successful. Starting X-axis loading bar movement over an expected duration of " + String(ALL_SIDES_REPEAT_DELAY_MS / 1000) + "s.");
+    Serial.println("Homing successful (1). Starting X-axis loading bar movement for 30s.");
 
     const float LOADING_BAR_X_INCHES = 26.0f;
-    long target_x_loading_bar_steps = (long)(LOADING_BAR_X_INCHES * STEPS_PER_INCH_XYZ); // X is at 0 after homing
+    long target_x_loading_bar_steps = (long)(LOADING_BAR_X_INCHES * STEPS_PER_INCH_XYZ); 
     float duration_seconds = ALL_SIDES_REPEAT_DELAY_MS / 1000.0f;
 
-    // Fallback to simple delay if duration is too short or distance is non-positive
     if (duration_seconds < 0.1f || target_x_loading_bar_steps <= 0) { 
-        Serial.println("Duration too short or distance non-positive for loading bar. Falling back to simple timed wait.");
+        Serial.println("Loading bar (1) fallback: Simple timed wait.");
         unsigned long simpleDelayStartTime = millis();
         while (millis() - simpleDelayStartTime < ALL_SIDES_REPEAT_DELAY_MS) {
             if (checkForHomeCommand()) {
-                Serial.println("Home command received during fallback wait. Second run cancelled.");
+                Serial.println("Home command during fallback wait (1). Process terminated.");
                 return;
             }
             unsigned long time_elapsed_in_loop = millis() - simpleDelayStartTime;
@@ -176,10 +175,7 @@ void paintAllSides() {
         float calculated_speed_hz = (float)target_x_loading_bar_steps / duration_seconds;
         unsigned int speed_to_set_hz = (unsigned int)max(1.0f, calculated_speed_hz); 
         
-        Serial.printf("Loading Bar: Moving X from 0 to %.2f inches (%ld steps) over %.2f s.\n",
-                        LOADING_BAR_X_INCHES, target_x_loading_bar_steps, duration_seconds);
-        Serial.printf("             Calculated speed: %.2f Hz, Speed being set: %u Hz. Accel: %u steps/s^2\n",
-                        calculated_speed_hz, speed_to_set_hz, DEFAULT_X_ACCEL);
+        Serial.printf("Loading Bar (1): Moving X over %.2f s.\n", duration_seconds);
 
         stepperX->setSpeedInHz(speed_to_set_hz);
         stepperX->setAcceleration(DEFAULT_X_ACCEL);
@@ -187,21 +183,75 @@ void paintAllSides() {
 
         while (stepperX->isRunning()) {
             if (checkForHomeCommand()) {
-                Serial.println("Home command received during X-axis loading bar. Stopping X and cancelling second run.");
+                Serial.println("Home command during loading bar (1). Process terminated.");
                 stepperX->forceStopAndNewPosition(stepperX->getCurrentPosition());
                 return;
             }
             delay(1);
         }
-        Serial.println("X-axis loading bar movement complete.");
+        Serial.println("Loading bar movement (1) complete.");
     }
 
     // Second run
-    Serial.println("Loading bar / delay finished. Starting second run of All Sides Painting.");
+    Serial.println("Loading bar / delay (1) finished. Starting second run of All Sides Painting.");
     if (!_executeSinglePaintAllSidesSequence("Run 2")) {
-        Serial.println("Second run aborted. Full two-run process terminated.");
+        Serial.println("Second run aborted. Full three-run process terminated.");
+        return;
+    }
+    Serial.println("Second run of All Sides Painting finished.");
+    Serial.println("Homing all axes before starting timer for third run...");
+
+    Homing homingController2(engine, stepperX, stepperY_Left, stepperY_Right, stepperZ); // Renamed
+    bool homingSuccess2 = homingController2.homeAllAxes();
+
+    if (!homingSuccess2) {
+        Serial.println("Homing after second run FAILED. Full three-run process terminated.");
         return;
     }
 
-    Serial.println("Two-Run All Sides Painting Process Fully Completed.");
+    Serial.println("Homing successful (2). Starting X-axis loading bar movement for 30s.");
+    // Re-use target_x_loading_bar_steps and duration_seconds as they are the same
+
+    if (duration_seconds < 0.1f || target_x_loading_bar_steps <= 0) { 
+        Serial.println("Loading bar (2) fallback: Simple timed wait.");
+        unsigned long simpleDelayStartTime = millis();
+        while (millis() - simpleDelayStartTime < ALL_SIDES_REPEAT_DELAY_MS) {
+            if (checkForHomeCommand()) {
+                Serial.println("Home command during fallback wait (2). Process terminated.");
+                return;
+            }
+            unsigned long time_elapsed_in_loop = millis() - simpleDelayStartTime;
+            if (time_elapsed_in_loop >= ALL_SIDES_REPEAT_DELAY_MS) break;
+            unsigned long time_remaining_in_loop = ALL_SIDES_REPEAT_DELAY_MS - time_elapsed_in_loop;
+            delay(min(100UL, time_remaining_in_loop)); 
+        }
+    } else {
+        float calculated_speed_hz = (float)target_x_loading_bar_steps / duration_seconds;
+        unsigned int speed_to_set_hz = (unsigned int)max(1.0f, calculated_speed_hz); 
+        
+        Serial.printf("Loading Bar (2): Moving X over %.2f s.\n", duration_seconds);
+
+        stepperX->setSpeedInHz(speed_to_set_hz);
+        stepperX->setAcceleration(DEFAULT_X_ACCEL);
+        stepperX->moveTo(target_x_loading_bar_steps); // Assumes X is at 0 after homing
+
+        while (stepperX->isRunning()) {
+            if (checkForHomeCommand()) {
+                Serial.println("Home command during loading bar (2). Process terminated.");
+                stepperX->forceStopAndNewPosition(stepperX->getCurrentPosition());
+                return;
+            }
+            delay(1);
+        }
+        Serial.println("Loading bar movement (2) complete.");
+    }
+    
+    // Third run
+    Serial.println("Loading bar / delay (2) finished. Starting third run of All Sides Painting.");
+    if (!_executeSinglePaintAllSidesSequence("Run 3")) {
+        Serial.println("Third run aborted. Full three-run process terminated.");
+        return;
+    }
+
+    Serial.println("Three-Run All Sides Painting Process Fully Completed.");
 } 
