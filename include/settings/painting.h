@@ -62,4 +62,13 @@
 #define SIDE4_SWEEP_Y 20.00f                   // Side 4 pattern Y sweep distance
 #define SIDE4_SHIFT_X 5.00f                    // Side 4 pattern X shift distance
 
+// Post-Print Pause
+#define DEFAULT_POST_PRINT_PAUSE 0 // milliseconds
+
+// Number of Paint Coats
+#define DEFAULT_PAINT_COATS 1 // Number of coats
+
+// Delay Between Coats
+#define DEFAULT_COAT_DELAY_MS 30000 // Milliseconds (e.g., 30 seconds)
+
 #endif // SETTINGS_PAINTING_H 

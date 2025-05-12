@@ -12,6 +12,7 @@
 #include "states/IdleState.h" // Include IdleState for transition
 #include "motors/Homing.h" // For homeAllAxes if needed, or a HomingState
 #include "states/HomingState.h" // Include HomingState
+#include "states/PaintingState.h" // ADDED: Include PaintingState for transition
 
 // Reference to the global state machine instance (already declared as extern in PnPState.h)
 // extern StateMachine* stateMachine; 
@@ -108,10 +109,10 @@ void PnPState::update() {
         if (stepperY_Right && stepperY_Right->isRunning()) stepperY_Right->stopMove();
         delay(50); // Small delay to ensure stops register
 
-        // --- TRANSITION TO HOMING ---
-        Serial.println("Transitioning to Homing State...");
+        // --- TRANSITION TO PAINTING ---
+        Serial.println("Transitioning to Painting State...");
         if (stateMachine) { // Check pointer
-            stateMachine->changeState(stateMachine->getHomingState()); // Transition to Homing
+            stateMachine->changeState(stateMachine->getPaintingState()); // Transition to Painting
         } else {
             Serial.println("ERROR: StateMachine pointer is null in PnPState! Cannot transition.");
         }
