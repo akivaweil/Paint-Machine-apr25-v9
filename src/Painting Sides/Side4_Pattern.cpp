@@ -79,10 +79,11 @@ void paintSide4Pattern() {
     // Move to the calculated starting point for this specific pattern sequence
     // Original logic: currentX = startX + (3 * shiftXDistance); currentY = startY + sweepYDistance;
     // This positions for a pattern that effectively starts around P7 and does P7->P8, P8->P9_equiv, P9_equiv->P10_equiv
-    currentX = startX_steps + (3 * shiftXDistance); // Use Side 4's shiftX. If negative, it moves left.
+    // MODIFIED: Initial X offset is now negative (to the left)
+    currentX = startX_steps - (3 * shiftXDistance); // Use Side 4's shiftX. If negative, it moves left. If positive, it still moves left due to negation.
     currentY = startY_steps + sweepYDistance;     // Use Side 4's sweepY.
     moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
-    Serial.println("Side 4 Pattern: Moved to calculated start for its specific sequence.");
+    Serial.println("Side 4 Pattern: Moved to calculated start for its specific sequence (X shifted left).");
 
     // First active sweep: Y- direction
     Serial.println("Side 4 Pattern: First active sweep Y-");
@@ -98,8 +99,9 @@ void paintSide4Pattern() {
     }
 
     // Interconnecting shift: X direction
-    Serial.println("Side 4 Pattern: Interconnecting shift X");
-    currentX += shiftXDistance; // Uses Side 4's shiftX (can be positive or negative)
+    Serial.println("Side 4 Pattern: Interconnecting shift X (moving in -X direction)");
+    // MODIFIED: Ensure shift is in -X direction
+    currentX -= shiftXDistance; // Shift in -X direction
     moveToXYZ(currentX, paint_x_speed, currentY, paint_y_speed, zPos, DEFAULT_Z_SPEED);
 
     // Second active sweep: Y+ direction

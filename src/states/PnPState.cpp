@@ -62,12 +62,12 @@ void PnPState::enter() {
     Serial.printf("Pick Location Steps: X=%ld, Y=%ld\n", pickLocationX_steps, pickLocationY_steps);
 
     // Reset state variables
-    // currentPnPGridPosition = 0; // Original starting position
+    currentPnPGridPosition = 0; // MODIFIED: Ensure processing starts from the beginning
     pnpCycleIsComplete = false;
     lastCycleTime = millis();  // Set initial cycle time
     pnp_step = 0; // Start with initial move to pick location
 
-    // --- TEMPORARY MODIFICATION: Only process bottom two rows ---
+    /* --- TEMPORARY MODIFICATION: Only process bottom two rows ---
     int startRow = GRID_ROWS - 2;
     if (startRow < 0) { // Ensure startRow is not negative if GRID_ROWS < 2
         startRow = 0;
@@ -86,7 +86,7 @@ void PnPState::enter() {
         Serial.printf("NOTE: Temporarily processing only bottom two rows (starting at Row %d, positions %d to %d of %d total original positions).\n", startRow, currentPnPGridPosition, endPositionForThisRun, totalOriginalPositions);
     }
     Serial.println("Original full grid processing is effectively commented out by starting later.");
-    // --- END TEMPORARY MODIFICATION ---
+    --- END TEMPORARY MODIFICATION ---*/
 
 
     // --- Initiate FIRST Move to Pick Location (Non-Blocking) ---
