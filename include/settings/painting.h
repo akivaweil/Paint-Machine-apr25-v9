@@ -22,11 +22,11 @@
 #define SIDE3_SIDE_Z_HEIGHT 0.0f                // Z height for side 3. Can move between 0 and -2.75 inches
 #define SIDE4_SIDE_Z_HEIGHT 0.0f                // Z height for side 4. Can move between 0 and -2.75 inches
 
-// --- Default Rotation Angles (degrees) --- (Order: 1, 2, 3, 4)
-#define SIDE1_ROTATION_ANGLE 180                // Default rotation angle for side 1
-#define SIDE2_ROTATION_ANGLE 90                // Default rotation angle for side 2
-#define SIDE3_ROTATION_ANGLE 0                // Default rotation angle for side 3
-#define SIDE4_ROTATION_ANGLE -90                // Default rotation angle for side 4
+// --- Rotation Angles (degrees) ---
+#define SIDE1_ROTATION_ANGLE 180                  // Default rotation angle for side 1 (front) - SWAPPED W/ SIDE 3
+#define SIDE2_ROTATION_ANGLE -90               // Default rotation angle for side 2 (right) - SWAPPED
+#define SIDE3_ROTATION_ANGLE 0                // Default rotation angle for side 3 (back) - SWAPPED W/ SIDE 1
+#define SIDE4_ROTATION_ANGLE 90                // Default rotation angle for side 4 (left) - SWAPPED
 
 // --- Default Painting Speeds (steps/sec) --- (Order: 1, 2, 3, 4)
 // Side 1 speeds
@@ -66,9 +66,9 @@
 #define DEFAULT_POST_PRINT_PAUSE 0 // milliseconds
 
 // Number of Paint Coats
-#define DEFAULT_PAINT_COATS 1 // Number of coats
+#define DEFAULT_PAINT_COATS 3 // Number of coats
 
 // Delay Between Coats
-#define DEFAULT_COAT_DELAY_MS 30000 // Milliseconds (e.g., 30 seconds)
+#define DEFAULT_COAT_DELAY_MS 10000 // Milliseconds (e.g., 30 seconds)
 
 #endif // SETTINGS_PAINTING_H 

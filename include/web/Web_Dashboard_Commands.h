@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <WebSocketsServer.h> // Needed for WebSocketsServer type
 #include <WiFiServer.h>      // Needed for WiFiServer type
+#include <ArduinoJson.h>
 
 // Declare functions defined in Web_Dashboard_Commands.cpp that are used elsewhere
 
@@ -29,5 +30,11 @@ bool checkForHomeCommand();
 
 // Function to initialize settings and pins related to web commands
 void setupWebDashboardCommands();
+
+// Function declarations
+void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command);
+void sendCurrentPnpSettings(uint8_t clientNum);
+void savePnpSettingsToNVS(); // Declaration for saving PNP settings
+void loadPnpSettingsFromNVS(); // Declaration for loading PNP settings
 
 #endif // WEB_DASHBOARD_COMMANDS_H 

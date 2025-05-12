@@ -82,6 +82,7 @@ void paintSide3Pattern() {
 
     long paint_x_speed = paintingSettings.getSide3PaintingXSpeed();
     long paint_y_speed = paintingSettings.getSide3PaintingYSpeed();
+    long final_sweep_paint_x_speed_side3 = (long)(paint_x_speed * 0.5f);
 
     // First sweep: X- direction
     Serial.println("Side 3 Pattern: First sweep X-");
@@ -144,16 +145,23 @@ void paintSide3Pattern() {
     moveToXYZ(currentX, paint_x_speed, currentY, paint_y_speed, zPos, DEFAULT_Z_SPEED);
     paintGun_OFF();
 
+    if (checkForHomeCommand()) {
+        moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, sideZPos, DEFAULT_Z_SPEED);
+        Serial.println("Side 3 Pattern Painting ABORTED due to home command");
+        return;
+    }
+
     // Fourth shift: Y- direction
     Serial.println("Side 3 Pattern: Shift Y-"); // Should this be after a home check? Assuming not based on pattern.
     currentY -= shiftY_steps;
     moveToXYZ(currentX, DEFAULT_X_SPEED, currentY, DEFAULT_Y_SPEED, zPos, DEFAULT_Z_SPEED);
 
-    // Fifth sweep: X- direction
+    // Fifth sweep: X- direction (Final X painting movement)
     Serial.println("Side 3 Pattern: Fifth sweep X-");
+    Serial.printf("Side 3 Pattern: Applying 75%% speed for final X sweep: %ld\n", final_sweep_paint_x_speed_side3);
     paintGun_ON();
     currentX -= sweepX_steps;
-    moveToXYZ(currentX, paint_x_speed, currentY, paint_y_speed, zPos, DEFAULT_Z_SPEED);
+    moveToXYZ(currentX, final_sweep_paint_x_speed_side3, currentY, paint_y_speed, zPos, DEFAULT_Z_SPEED);
     paintGun_OFF();
 
     if (checkForHomeCommand()) {

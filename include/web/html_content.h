@@ -631,6 +631,12 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                             window.needToLoadPatternSettings = false;
                             sendCommand('GET_PAINT_SETTINGS');
                         }
+                        
+                        // Request PNP settings
+                        if (websocket.readyState === WebSocket.OPEN) {
+                            websocket.send(JSON.stringify({ command: "GET_PNP_SETTINGS" }));
+                            console.log("Requested PNP settings");
+                        }
                     }, 500);
                 };
                 
@@ -643,7 +649,7 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 
                 websocket.onmessage = function(event) {
                     console.log('Received message: ' + event.data);
-                    handleWebSocketMessage(event.data);
+                    handleWebSocketMessage(event);
                 };
                 
                 websocket.onerror = function(event) {
@@ -729,13 +735,31 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
         
         // Handle incoming WebSocket messages
         function handleWebSocketMessage(message) {
-            // Process messages from the ESP32
             try {
-                console.log('Processing message: ' + message);
+                // Try to parse message as JSON
+                const data = JSON.parse(message.data);
+                
+                // Handle PNP settings data
+                if (data.event === "pnp_settings") {
+                    console.log("Received PNP settings:", data);
+                    if (data.pnp_x_speed !== undefined) document.getElementById('pnp_x_speed').value = data.pnp_x_speed;
+                    if (data.pnp_x_accel !== undefined) document.getElementById('pnp_x_accel').value = data.pnp_x_accel;
+                    if (data.pnp_y_speed !== undefined) document.getElementById('pnp_y_speed').value = data.pnp_y_speed;
+                    if (data.pnp_y_accel !== undefined) document.getElementById('pnp_y_accel').value = data.pnp_y_accel;
+                    return;
+                }
+                
+                // Handle other JSON messages if needed
+                console.log("Received JSON message:", data);
+                
+            } catch (error) {
+                // Not JSON, handle as text message
+                const messageText = message.data;
+                console.log("Received text message:", messageText);
                 
                 // --- State Handling --- 
-                if (message.startsWith('STATE:')) {
-                    const stateName = message.substring(6); // Get text after "STATE:"
+                if (messageText.startsWith('STATE:')) {
+                    const stateName = messageText.substring(6); // Get text after "STATE:"
                     const statusDisplay = document.getElementById('machineStatusDisplay');
                     if (statusDisplay) {
                         statusDisplay.textContent = stateName; // Update status display
@@ -743,12 +767,10 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                     }
                     updateButtonStates(stateName); // Enable/disable buttons based on state
                 }
-                // Check for machine status updates (REMOVED - Handled by STATE: now)
-                // else if (message.startsWith('MACHINE_STATUS:')) { ... }
                 
                 // Check for pressure pot status updates
-                else if (message.startsWith('PRESSURE_POT_STATUS:')) {
-                    const status = message.split(':')[1];
+                else if (messageText.startsWith('PRESSURE_POT_STATUS:')) {
+                    const status = messageText.split(':')[1];
                     console.log('Updating pressure pot status to: ' + status);
                     
                     // Update UI toggle without triggering a new command
@@ -765,8 +787,8 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 }
                 
                 // Check for paint gun status updates
-                else if (message.startsWith('PAINT_GUN_STATUS:')) {
-                    const status = message.split(':')[1];
+                else if (messageText.startsWith('PAINT_GUN_STATUS:')) {
+                    const status = messageText.split(':')[1];
                     console.log('Updating paint gun status to: ' + status);
                     
                     // Update UI toggle without triggering a new command
@@ -783,8 +805,8 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 }
                 
                 // Handle settings messages
-                else if (message.startsWith('SETTING:')) {
-                    const parts = message.split(':');
+                else if (messageText.startsWith('SETTING:')) {
+                    const parts = messageText.split(':');
                     if (parts.length >= 3) {
                         const setting = parts[1];
                         const value = parts[2];
@@ -793,12 +815,10 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 }
                 
                 // Handle status messages
-                else if (message.startsWith('STATUS:')) {
-                    console.log('Status message: ' + message.substring(7));
+                else if (messageText.startsWith('STATUS:')) {
+                    console.log('Status message: ' + messageText.substring(7));
                     // Could add notification display here
                 }
-            } catch (e) {
-                console.error('Error handling message: ' + e.message);
             }
         }
         
@@ -1011,10 +1031,62 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
             }
         }
 
+        function updatePnpSettings() {
+            const pnpXSpeed = document.getElementById('pnp_x_speed').value;
+            const pnpXAccel = document.getElementById('pnp_x_accel').value;
+            const pnpYSpeed = document.getElementById('pnp_y_speed').value;
+            const pnpYAccel = document.getElementById('pnp_y_accel').value;
+            
+            const payload = {
+                command: "update_pnp_settings",
+                pnp_x_speed: parseInt(pnpXSpeed),
+                pnp_x_accel: parseInt(pnpXAccel),
+                pnp_y_speed: parseInt(pnpYSpeed),
+                pnp_y_accel: parseInt(pnpYAccel)
+            };
+            
+            if (websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify(payload));
+                console.log("PNP settings sent to ESP32");
+            } else {
+                console.error("WebSocket not connected");
+            }
+        }
+
+        function initPnpSettings() {
+            // Request current PNP settings from the ESP32
+            if (websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({ command: "GET_PNP_SETTINGS" }));
+                console.log("Requested PNP settings");
+            }
+        }
+
         // Initialize the app when the page loads
         window.addEventListener('load', function() {
             initWebSocket();
             initPatternSettings();
+            initPnpSettings();
+            
+            // Set up pattern settings header toggle
+            const patternSettingsHeader = document.getElementById('patternSettingsHeader');
+            const patternSettingsContent = document.getElementById('patternSettingsContent');
+            
+            patternSettingsHeader.addEventListener('click', function() {
+                patternSettingsContent.classList.toggle('collapsed');
+                patternSettingsHeader.classList.toggle('collapsed');
+            });
+            
+            // Set up PNP settings header toggle
+            const pnpSettingsHeader = document.getElementById('pnpSettingsHeader');
+            const pnpSettingsContent = document.getElementById('pnpSettingsContent');
+            
+            pnpSettingsHeader.addEventListener('click', function() {
+                pnpSettingsContent.classList.toggle('collapsed');
+                pnpSettingsHeader.classList.toggle('collapsed');
+            });
+            
+            // Initially load settings
+            loadPatternSettings();
         });
     </script>
 </head>
@@ -1321,6 +1393,45 @@ const char HTML_PROGMEM[] PROGMEM = R"rawliteral(
                 <!-- <button class="main-btn highlight" onclick="savePatternSettings()">Save Settings</button> -->
             </div>
         </div> <!-- End of pattern-settings-content-wrapper -->
+    </div>
+    
+    <!-- PNP Motion Settings Section -->
+    <div class="pattern-settings-container">
+        <!-- Clickable Header for Toggling -->
+        <h2 id="pnpSettingsHeader" class="pattern-settings-header">
+            PNP Motion Settings
+        </h2>
+
+        <!-- Content Wrapper for Collapsing -->
+        <div class="pattern-settings-content-wrapper" id="pnpSettingsContent">
+            <div class="pattern-settings-grid">
+                <div class="pattern-setting-group">
+                    <h3>X Axis</h3>
+                    <div class="setting-inputs labeled-inputs">
+                        <label for="pnp_x_speed">Speed (steps/s):</label>
+                        <input type="number" id="pnp_x_speed" class="setting-input" min="1000" max="30000" step="500" placeholder="10000">
+                        <label for="pnp_x_accel">Accel (steps/s²):</label>
+                        <input type="number" id="pnp_x_accel" class="setting-input" min="1000" max="30000" step="500" placeholder="10000">
+                    </div>
+                </div>
+                <div class="pattern-setting-group">
+                    <h3>Y Axis</h3>
+                    <div class="setting-inputs labeled-inputs">
+                        <label for="pnp_y_speed">Speed (steps/s):</label>
+                        <input type="number" id="pnp_y_speed" class="setting-input" min="1000" max="35000" step="500" placeholder="25000">
+                        <label for="pnp_y_accel">Accel (steps/s²):</label>
+                        <input type="number" id="pnp_y_accel" class="setting-input" min="1000" max="35000" step="500" placeholder="32000">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="main-divider"></div>
+            
+            <!-- Settings Controls -->
+            <div class="settings-controls">
+                <button class="main-btn" onclick="updatePnpSettings()">Update PNP Settings</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>
