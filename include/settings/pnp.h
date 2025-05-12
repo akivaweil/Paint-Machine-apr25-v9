@@ -15,8 +15,8 @@
 // --- Grid Layout ---
 #define GRID_COLS 4                            // Grid columns
 #define GRID_ROWS 5                            // Grid rows
-#define GRID_ORIGIN_X 18.2f                    // Grid origin X position (top-right corner)
-#define GRID_ORIGIN_Y 32.5f                    // Grid origin Y position (top-right corner)
+#define GRID_ORIGIN_X 18.5f                    // Grid origin X position (top-right corner)
+#define GRID_ORIGIN_Y 32.25f                    // Grid origin Y position (top-right corner)
 
 // --- Pick Location (inches) ---
 #define PICK_LOCATION_X 12.5f                  // X coordinate for component pickup

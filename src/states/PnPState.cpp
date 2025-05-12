@@ -23,11 +23,6 @@ extern FastAccelStepper *stepperX;
 extern FastAccelStepper *stepperY_Left;
 extern FastAccelStepper *stepperY_Right;
 
-// External global variables for PNP settings (defined in Web_Dashboard_Commands.cpp)
-extern float g_pnp_x_speed;
-extern float g_pnp_x_accel;
-extern float g_pnp_y_speed;
-extern float g_pnp_y_accel;
 
 //* ************************************************************************
 //* ************************** PnP STATE **********************************
@@ -287,16 +282,12 @@ void PnPState::moveToPickLocation(bool initialMove) {
     Serial.println(" to pick location...");
     
     if (stepperX && stepperY_Left && stepperY_Right) {
-        // Use PNP specific speeds and accelerations
-        stepperX->setAcceleration(g_pnp_x_accel);
-        stepperY_Left->setAcceleration(g_pnp_y_accel);
-        stepperY_Right->setAcceleration(g_pnp_y_accel); // Assuming Y-axis PNP accel is the same for both
-        stepperX->setSpeedInHz(g_pnp_x_speed);
-        stepperY_Left->setSpeedInHz(g_pnp_y_speed);
-        stepperY_Right->setSpeedInHz(g_pnp_y_speed);   // Assuming Y-axis PNP speed is the same for both
-
-        Serial.printf("PNP Speeds: X=%.0f, Y=%.0f\n", g_pnp_x_speed, g_pnp_y_speed);
-        Serial.printf("PNP Accels: X=%.0f, Y=%.0f\n", g_pnp_x_accel, g_pnp_y_accel);
+        stepperX->setAcceleration(DEFAULT_X_ACCEL);
+        stepperY_Left->setAcceleration(DEFAULT_Y_ACCEL);
+        stepperY_Right->setAcceleration(DEFAULT_Y_ACCEL);
+        stepperX->setSpeedInHz(DEFAULT_X_SPEED);
+        stepperY_Left->setSpeedInHz(DEFAULT_Y_SPEED);
+        stepperY_Right->setSpeedInHz(DEFAULT_Y_SPEED);
 
         stepperX->moveTo(pickLocationX_steps);
         stepperY_Left->moveTo(pickLocationY_steps); 

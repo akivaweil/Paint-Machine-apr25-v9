@@ -29,7 +29,7 @@ const unsigned int CLEANING_X_SPEED = 15000;
 const unsigned int CLEANING_Y_SPEED = 15000;
 const unsigned int CLEANING_Z_SPEED = 4000;
 
-const unsigned long ALL_SIDES_REPEAT_DELAY_MS = 0.1 * 1000; // 10 seconds in milliseconds
+const unsigned long ALL_SIDES_REPEAT_DELAY_MS = 30 * 1000; // 30 seconds in milliseconds
 
 // Helper function for a single painting sequence
 // Returns true if completed, false if aborted by home command
@@ -54,6 +54,38 @@ bool _executeSinglePaintAllSidesSequence(const char* runLabel) {
         Serial.println(")");
     }
     
+    // --- START: Comment out redundant cleaning burst in All_Sides ---
+    /*
+    //! Move to cleaning position and perform short burst
+    Serial.print("Moving to cleaning position... (");
+    Serial.print(runLabel);
+    Serial.println(")");
+    long cleaningX_steps = (long)(CLEANING_X_INCH * STEPS_PER_INCH_XYZ);
+    long cleaningY_steps = (long)(CLEANING_Y_INCH * STEPS_PER_INCH_XYZ);
+    long cleaningZ_steps = (long)(CLEANING_Z_INCH * STEPS_PER_INCH_XYZ);
+
+    myServo.setAngle(35); // Set servo to cleaning angle
+    moveToXYZ(cleaningX_steps, CLEANING_X_SPEED, cleaningY_steps, CLEANING_Y_SPEED, cleaningZ_steps, CLEANING_Z_SPEED);
+
+    Serial.print("Starting short cleaning burst... (");
+    Serial.print(runLabel);
+    Serial.println(")");
+    paintGun_ON();
+    delay(500); // Keep paint gun on for 0.5 seconds
+    paintGun_OFF();
+    Serial.print("Cleaning burst complete. (");
+    Serial.print(runLabel);
+    Serial.println(")");
+    // Note: Servo remains at cleaning angle, assuming painting functions will set their required angles. If not, add code here to return servo to a default angle.
+    
+    //! Move Z axis to home (0) before starting paint sequence
+    Serial.print("Moving Z axis to home (0)... (");
+    Serial.print(runLabel);
+    Serial.println(")");
+    // Use current X/Y positions from after the cleaning move
+    moveToXYZ(stepperX->getCurrentPosition(), CLEANING_X_SPEED, stepperY_Left->getCurrentPosition(), CLEANING_Y_SPEED, 0, CLEANING_Z_SPEED);
+    */
+    // --- END: Comment out redundant cleaning burst in All_Sides ---
     // The PaintingState now handles a dedicated pre-paint clean using CleaningState.
 
     Serial.print("Z axis at 0 (assumed or handled by pre-clean). Starting painting. (");
@@ -61,37 +93,37 @@ bool _executeSinglePaintAllSidesSequence(const char* runLabel) {
     Serial.println(")");
     // Note: Servo angle should be set by individual side patterns as needed.
     
-    //! STEP 1: Paint left side (Side 4)
-    Serial.print("Starting Left Side (Side 4) ("); Serial.print(runLabel); Serial.println(")");
-    paintSide4Pattern();
+    //! STEP 1: Paint right side
+    Serial.print("Starting Right Side ("); Serial.print(runLabel); Serial.println(")");
+    paintSide2Pattern();
     if (checkForHomeCommand()) {
-        Serial.print("All Sides Painting ABORTED ("); Serial.print(runLabel); Serial.println(", after left side)");
+        Serial.print("All Sides Painting ABORTED ("); Serial.print(runLabel); Serial.println(", after right side)");
         return false;
     }
 
-    //! STEP 2: Paint back side (Side 3)
-    Serial.print("Starting Back Side (Side 3) ("); Serial.print(runLabel); Serial.println(")");
+    //! STEP 2: Paint back side
+    Serial.print("Starting Back Side ("); Serial.print(runLabel); Serial.println(")");
     paintSide3Pattern();
     if (checkForHomeCommand()) {
         Serial.print("All Sides Painting ABORTED ("); Serial.print(runLabel); Serial.println(", after back side)");
         return false;
     }
 
-    //! STEP 3: Paint right side (Side 2)
-    Serial.print("Starting Right Side (Side 2) ("); Serial.print(runLabel); Serial.println(")");
-    paintSide2Pattern();
-    if (checkForHomeCommand()) {
-        Serial.print("All Sides Painting ABORTED ("); Serial.print(runLabel); Serial.println(", after right side)");
-        return false;
-    }
-    
-    // //! STEP 4: Paint front side (Side 1)
-    // Serial.print("Starting Front Side (Side 1) ("); Serial.print(runLabel); Serial.println(")");
+    //! STEP 3: Paint front side (Commented Out)
+    // Serial.print("Starting Front Side ("); Serial.print(runLabel); Serial.println(")");
     // paintSide1Pattern();
     // if (checkForHomeCommand()) {
-    //     Serial.print("All Sides Painting ABORTED ("); Serial.print(runLabel); Serial.println(", after front side)");
+    //     Serial.print("All Sides Painting ABORTED ("); Serial.print(runLabel); Serial.println(", after front side (Commented Out))");
     //     return false;
     // }
+    
+    //! STEP 4: Paint left side
+    Serial.print("Starting Left Side ("); Serial.print(runLabel); Serial.println(")");
+    paintSide4Pattern();
+    if (checkForHomeCommand()) {
+        Serial.print("All Sides Painting ABORTED ("); Serial.print(runLabel); Serial.println(", after left side)");
+        return false;
+    }
     
     Serial.print("All Sides Painting Sequence (");
     Serial.print(runLabel);
@@ -177,13 +209,6 @@ void paintAllSides() {
         return;
     }
 
-    // ADD THIS BLOCK TO ENSURE Z-AXIS HOLDS POSITION
-    if (stepperZ) {
-        Serial.println("DEBUG: Explicitly enabling Z stepper outputs after homing (2) to prevent drift.");
-        stepperZ->enableOutputs();
-    }
-    // END OF ADDED BLOCK
-    
     Serial.println("Homing successful (2). Starting X-axis loading bar movement for 30s.");
     // Re-use target_x_loading_bar_steps and duration_seconds as they are the same
 

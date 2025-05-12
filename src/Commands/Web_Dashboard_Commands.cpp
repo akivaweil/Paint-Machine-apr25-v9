@@ -24,45 +24,6 @@
 #include <ArduinoJson.h>
 #include "config.h" // Assuming this is directly under include/
 #include "states/IdleState.h" // Include IdleState for comparison
-#include "settings/motion.h" // Include for default PNP values
-
-// --- PNP Settings Keys for NVS ---
-#define PNP_X_SPEED_KEY "pnpXSpd"
-#define PNP_X_ACCEL_KEY "pnpXAcc"
-#define PNP_Y_SPEED_KEY "pnpYSpd"
-#define PNP_Y_ACCEL_KEY "pnpYAcc"
-
-// Global variables for PNP settings
-float g_pnp_x_speed = DEFAULT_PNP_X_SPEED;
-float g_pnp_x_accel = DEFAULT_PNP_X_ACCEL;
-float g_pnp_y_speed = DEFAULT_PNP_Y_SPEED;
-float g_pnp_y_accel = DEFAULT_PNP_Y_ACCEL;
-
-//* ************************************************************************
-//* ********************* PNP SETTINGS NVS FUNCTIONS ***********************
-//* ************************************************************************
-
-void savePnpSettingsToNVS() {
-    persistence.beginTransaction(false); // Open NVS for writing
-    persistence.saveFloat(PNP_X_SPEED_KEY, g_pnp_x_speed);
-    persistence.saveFloat(PNP_X_ACCEL_KEY, g_pnp_x_accel);
-    persistence.saveFloat(PNP_Y_SPEED_KEY, g_pnp_y_speed);
-    persistence.saveFloat(PNP_Y_ACCEL_KEY, g_pnp_y_accel);
-    persistence.endTransaction(); // Close NVS
-    Serial.println("PNP motion settings saved to NVS.");
-}
-
-void loadPnpSettingsFromNVS() {
-    persistence.beginTransaction(true); // Open NVS for reading
-    g_pnp_x_speed = persistence.loadFloat(PNP_X_SPEED_KEY, DEFAULT_PNP_X_SPEED);
-    g_pnp_x_accel = persistence.loadFloat(PNP_X_ACCEL_KEY, DEFAULT_PNP_X_ACCEL);
-    g_pnp_y_speed = persistence.loadFloat(PNP_Y_SPEED_KEY, DEFAULT_PNP_Y_SPEED);
-    g_pnp_y_accel = persistence.loadFloat(PNP_Y_ACCEL_KEY, DEFAULT_PNP_Y_ACCEL);
-    persistence.endTransaction(); // Close NVS
-    Serial.println("PNP motion settings loaded from NVS.");
-    Serial.printf("Loaded PNP Settings: X_Speed=%.0f, X_Accel=%.0f, Y_Speed=%.0f, Y_Accel=%.0f\\n",
-                  g_pnp_x_speed, g_pnp_x_accel, g_pnp_y_speed, g_pnp_y_accel);
-}
 
 //* ************************************************************************
 //* ************************* WEB DASHBOARD ***************************
@@ -88,7 +49,7 @@ extern StateMachine* stateMachine;
 extern ServoMotor myServo;
 
 // Declarations for functions now that Commands.h is removed
-void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String commandPayload);
+void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command);
 
 // Remove the placeholder implementations
 // Declarations for painting functions now that PaintingSides.h is removed
@@ -207,96 +168,25 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 }
 
 // Implementation of processWebCommand
-void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String commandPayload) {
-    Serial.print("Received payload from client ");
+void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String command) {
+    Serial.print("Received command from client ");
     Serial.print(num);
     Serial.print(": ");
-    Serial.println(commandPayload);
+    Serial.println(command);
 
-    // Try to parse as JSON first
-    JsonDocument doc; // Replaced StaticJsonDocument<256>
-    DeserializationError error = deserializeJson(doc, commandPayload);
-
+    // Declare variables used in command parsing and responses
     String baseCommand;
+    String valueStr;
+    float value1 = 0; 
+    String message; // Declare message string here for broader scope
     
-    if (!error) { // If JSON parsing is successful
-        if (doc["command"].is<const char*>()) { // Replaced containsKey and check type
-            baseCommand = String(doc["command"].as<const char*>());
-            baseCommand.toUpperCase(); // Standardize command format
-
-            Serial.print("Parsed JSON command: ");
-            Serial.println(baseCommand);
-
-            if (baseCommand == "UPDATE_PNP_SETTINGS") {
-                if (doc["pnp_x_speed"].is<float>()) g_pnp_x_speed = doc["pnp_x_speed"].as<float>();
-                if (doc["pnp_x_accel"].is<float>()) g_pnp_x_accel = doc["pnp_x_accel"].as<float>();
-                if (doc["pnp_y_speed"].is<float>()) g_pnp_y_speed = doc["pnp_y_speed"].as<float>();
-                if (doc["pnp_y_accel"].is<float>()) g_pnp_y_accel = doc["pnp_y_accel"].as<float>();
-                
-                Serial.printf("Updated PNP Settings (in memory): X_Speed=%.0f, X_Accel=%.0f, Y_Speed=%.0f, Y_Accel=%.0f\\n", 
-                              g_pnp_x_speed, g_pnp_x_accel, g_pnp_y_speed, g_pnp_y_accel);
-                
-                savePnpSettingsToNVS(); // Save to NVS
-
-                // Send confirmation back to the client
-                JsonDocument pnpSettingsDoc; // Replaced StaticJsonDocument<200>
-                pnpSettingsDoc["event"] = "pnp_settings"; // Add an event type for easier client-side handling
-                pnpSettingsDoc["pnp_x_speed"] = g_pnp_x_speed;
-                pnpSettingsDoc["pnp_x_accel"] = g_pnp_x_accel;
-                pnpSettingsDoc["pnp_y_speed"] = g_pnp_y_speed;
-                pnpSettingsDoc["pnp_y_accel"] = g_pnp_y_accel;
-                
-                String output;
-                serializeJson(pnpSettingsDoc, output);
-                webSocket->sendTXT(num, output);
-                Serial.println("Sent current PNP settings to client.");
-                return; // Command processed
-            } else if (baseCommand == "GET_PNP_SETTINGS") {
-                JsonDocument settings_doc; // For sending settings
-                settings_doc["event"] = "pnp_settings"; // Add an event type for easier client-side handling
-                settings_doc["pnp_x_speed"] = g_pnp_x_speed;
-                settings_doc["pnp_x_accel"] = g_pnp_x_accel;
-                settings_doc["pnp_y_speed"] = g_pnp_y_speed;
-                settings_doc["pnp_y_accel"] = g_pnp_y_accel;
-                
-                String output;
-                serializeJson(settings_doc, output);
-                webSocket->sendTXT(num, output);
-                Serial.println("Sent current PNP settings to client.");
-                return; // Command processed
-            }
-            // Add other JSON command handling here if necessary
-        } else if (doc["command"].isNull()) {
-             // Handle case where "command" field is present but null, or not a string.
-             Serial.println("[WS] JSON received, but 'command' field is null or not a string.");
-        } else {
-            // Handle case where "command" field is missing.
-             Serial.println("[WS] JSON received, but 'command' field is missing.");
-        }
-    } else {
-        // Serial.print("deserializeJson() failed: "); // Optional: Log deserialization error
-        // Serial.println(error.c_str());
-        // Fall through to legacy command parsing if JSON parsing fails
-    }
-    // If not JSON or not a recognized JSON command, fall through to existing string command parsing
-    // For compatibility, we re-assign commandPayload to 'command' if it wasn't JSON based
-    // or if the JSON command wasn't handled above. This part of logic needs care.
-    // For now, we assume if it's JSON, it's handled, otherwise it's an old-style command.
-    // If it parsed as JSON but wasn't 'UPDATE_PNP_SETTINGS', it will currently fall through. 
-    // This might need refinement if you have mixed JSON/non-JSON commands.
-
-    // Existing string command parsing logic starts here
-    String valueStr; // Moved declaration up
-    float value1 = 0; // Moved declaration up
-    String message; 
-
-    int colonIndex = commandPayload.indexOf(':');
+    int colonIndex = command.indexOf(':');
     
     if (colonIndex == -1) {
-        baseCommand = commandPayload; // Use original payload if no colon
+        baseCommand = command;
     } else {
-        baseCommand = commandPayload.substring(0, colonIndex);
-        valueStr = commandPayload.substring(colonIndex + 1);
+        baseCommand = command.substring(0, colonIndex);
+        valueStr = command.substring(colonIndex + 1);
         value1 = valueStr.toFloat();
     }
     baseCommand.toUpperCase();
@@ -1100,7 +990,7 @@ void processWebCommand(WebSocketsServer* webSocket, uint8_t num, String commandP
     else {
         // Unknown command
         Serial.print("Unknown command received: ");
-        Serial.println(commandPayload);
+        Serial.println(command);
         webSocket->sendTXT(num, "CMD_ERROR: Unknown command");
     }
 }

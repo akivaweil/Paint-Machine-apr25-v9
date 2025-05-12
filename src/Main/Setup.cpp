@@ -19,7 +19,6 @@
 #include "states/HomingState.h"
 #include "states/StateMachine.h"
 #include <Preferences.h>
-#include "web/Web_Dashboard_Commands.h" // For loadPnpSettingsFromNVS
 
 //* ************************************************************************
 //* ************************* SYSTEM SETUP ***************************
@@ -212,9 +211,6 @@ void initializeSettings() {
     
     // Now initialize PaintingSettings, which might load or reset/save
     paintingSettings.begin();
-
-    // Load PNP motion settings from NVS
-    loadPnpSettingsFromNVS();
     
     // No need to explicitly close persistence here, 
     // paintingSettings.begin() handles its own NVS operations if needed.
